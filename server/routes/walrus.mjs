@@ -195,6 +195,45 @@ let memories = [
   },
 ]
 
+// Walrus Relayer Proxy endpoint to avoid browser CORS and communicate with relayer.memory.walrus.xyz
+router.post('/relayer', async (req, res) => {
+  const targetUrl = req.body.url || 'https://relayer.memory.walrus.xyz/health'
+  const method = req.body.method || 'GET'
+  const headers = req.body.headers || {}
+  const body = req.body.body
+
+  try {
+    const fetchOptions = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers,
+      },
+      signal: AbortSignal.timeout(15000),
+    }
+
+    if (body && (method === 'POST' || method === 'PUT')) {
+      fetchOptions.body = typeof body === 'string' ? body : JSON.stringify(body)
+    }
+
+    const relayerRes = await fetch(targetUrl, fetchOptions)
+    const contentType = relayerRes.headers.get('content-type') || ''
+    
+    if (contentType.includes('application/json')) {
+      const data = await relayerRes.json()
+      return res.status(relayerRes.status).json(data)
+    } else {
+      const text = await relayerRes.text()
+      return res.status(relayerRes.status).send(text)
+    }
+  } catch (err) {
+    return res.status(502).json({
+      error: 'WALRUS_RELAYER_ERROR',
+      message: err.message,
+    })
+  }
+})
+
 // GET all Walrus Memories
 router.get('/', (_req, res) => {
   res.json({

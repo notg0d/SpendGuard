@@ -15,6 +15,39 @@ router.get('/status', async (_req, res) => {
   }
 })
 
+// Direct JSON-RPC proxy to Tatum Sui Mainnet Gateway with optional custom API key
+router.post('/sui/rpc', async (req, res) => {
+  const customKey = req.headers['x-custom-tatum-key']
+  const key = customKey || process.env.TATUM_API_KEY
+
+  if (!key) {
+    return res.status(401).json({
+      error: 'UNAUTHORIZED_NO_KEY',
+      message: 'No Tatum API Key configured. Please enter your key in Gateway Settings.',
+    })
+  }
+
+  try {
+    const rpcRes = await fetch('https://sui-mainnet.gateway.tatum.io/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': String(key),
+      },
+      body: JSON.stringify(req.body),
+      signal: AbortSignal.timeout(15000),
+    })
+
+    const data = await rpcRes.json()
+    return res.status(rpcRes.status).json(data)
+  } catch (err) {
+    return res.status(502).json({
+      error: 'GATEWAY_CONNECTION_ERROR',
+      message: err.message,
+    })
+  }
+})
+
 // Query live Sui Mainnet system state & telemetry via Tatum Sui RPC
 router.get('/sui/telemetry', async (_req, res) => {
   try {
