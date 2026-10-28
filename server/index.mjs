@@ -44,8 +44,7 @@ app.use((req, res, next) =>
 app.use(credentialGuard);
 
 app.use('/api/subsense', subsenseRoutes);
-// Legacy reference routes fabricated receipts and allowed arbitrary proxy targets.
-// Keep their source for attribution/reference, but never expose them in SubSense.
+// Retired reference APIs are not part of SubSense; reject unknown API paths.
 app.use('/api', (_req, res) =>
   res.status(404).json({ message: 'API route not found.' }),
 );

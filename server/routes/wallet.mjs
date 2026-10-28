@@ -14,7 +14,7 @@ import {
 import { createSubSenseRouter } from './subsense.mjs';
 import { networkConfig } from '../subsense-network.mjs';
 import { queryTatum } from '../subsense-tatum.mjs';
-import { verifyOpenAI } from '../subsense-ai.mjs';
+import { verifyOpenRouter } from '../subsense-ai.mjs';
 import { EMBEDDING_MODEL } from '../../shared/ai.mjs';
 import { createAIRouter } from './ai.mjs';
 import {
@@ -28,7 +28,7 @@ export function createWalletRouter({
   origin,
   connect = connectUserCredentials,
   query = queryTatum,
-  verifyAI = verifyOpenAI,
+  verifyAI = verifyOpenRouter,
   aiRequest,
 } = {}) {
   const router = Router();
@@ -84,7 +84,7 @@ export function createWalletRouter({
       authMode: 'wallet',
       tatumConfigured: Boolean(session?.credentials?.tatumKey && session?.client),
       walrusConfigured: Boolean(session?.client),
-      openaiConfigured: Boolean(session?.credentials?.openaiKey),
+      aiConfigured: Boolean(session?.credentials?.openrouterKey),
       chatModel: session?.credentials?.chatModel,
       embeddingModel: EMBEDDING_MODEL,
       walletAuthenticated: Boolean(session),
@@ -150,7 +150,7 @@ export function createWalletRouter({
     res.locals.walletSecrets = [
       session.credentials?.tatumKey,
       session.credentials?.memwalKey,
-      session.credentials?.openaiKey,
+      session.credentials?.openrouterKey,
     ];
     context.run(session, next);
   });
@@ -174,7 +174,7 @@ export function createWalletRouter({
     session.connecting = true;
     let client;
     try {
-      if (credentials.openaiKey) await verifyAI(credentials);
+      if (credentials.openrouterKey) await verifyAI(credentials);
       if (credentials.tatumKey) client = await connect(session.wallet, credentials);
       if (!store.valid(session) || revision !== session.revision) {
         client?.destroy();
@@ -191,12 +191,12 @@ export function createWalletRouter({
         ...sessionInfo(session),
         note: client
           ? 'Mainnet account ownership, delegate registration and signed metadata access verified. No memories uploaded.'
-          : 'OpenAI model access verified. No paid AI requests made.',
+          : 'OpenRouter key and free model listings verified. No inference requests made.',
       });
     } catch (error) {
       client?.destroy();
       // Do not propagate upstream bodies. Scrub known submitted secrets as defense in depth.
-      const message = [credentials.tatumKey, credentials.memwalKey, credentials.openaiKey].filter(Boolean).reduce(
+      const message = [credentials.tatumKey, credentials.memwalKey, credentials.openrouterKey].filter(Boolean).reduce(
         (text, secret) => text.split(secret).join('[REDACTED]'),
         error.message ?? 'Connection check failed.',
       );

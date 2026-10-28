@@ -171,7 +171,7 @@ export function sessionInfo(session) {
           expiresAt: new Date(session.expires).toISOString(),
           credentialsConfigured: Boolean(session.credentials && session.client),
           vaultUnlocked: Boolean(session.credentials),
-          openaiConfigured: Boolean(session.credentials?.openaiKey),
+          aiConfigured: Boolean(session.credentials?.openrouterKey),
         }
       : {}),
   };

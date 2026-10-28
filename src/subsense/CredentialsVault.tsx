@@ -10,7 +10,7 @@ import {
   writeVault,
 } from './vault';
 import type { UserCredentials } from './vault';
-import { CHAT_MODELS, DEFAULT_CHAT_MODEL } from '../../shared/ai.mjs';
+import { CHAT_MODELS, CHAT_MODEL_LABELS, DEFAULT_CHAT_MODEL } from '../../shared/ai.mjs';
 import { Choices } from './forms';
 import { downloadBackup } from './workspace';
 import { useWalletAccess } from './WalletAccess';
@@ -45,7 +45,7 @@ export default function CredentialsVault({
     tatumKey: '',
     memwalKey: '',
     accountId: '',
-    openaiKey: '',
+    openrouterKey: '',
     chatModel: DEFAULT_CHAT_MODEL,
   });
   const [password, setPassword] = useState('');
@@ -137,7 +137,7 @@ export default function CredentialsVault({
         }
       />
       <p className="text-sm text-tertiary">
-        Add an OpenAI key for AI assistance, a complete Mainnet connection for
+        Add an OpenRouter key for free AI assistance, a complete Mainnet connection for
         Walrus memories, or both. A separate password encrypts them in this browser.
         Never enter your wallet seed phrase or owner wallet private key.
       </p>
@@ -153,7 +153,7 @@ export default function CredentialsVault({
             />
             <p className="text-sm text-secondary">
               {session.credentialsConfigured ? 'Your wallet-owned Mainnet account is connected. ' : ''}
-              {session.openaiConfigured ? 'OpenAI is ready for explicit requests. ' : ''}
+              {session.aiConfigured ? 'AI is ready for explicit requests. ' : ''}
               Provider keys are held only for this temporary backend session.
             </p>
           </div>
@@ -228,17 +228,17 @@ export default function CredentialsVault({
                 </Field>
               </div>
               <div className="md:col-span-2 border-t border-secondary pt-xl space-y-xl">
-                <Field label="OpenAI API key (optional)">
+                <Field label="OpenRouter API key (optional)">
                   <input className={fieldClass} type="password" autoComplete="off"
-                    maxLength={512} value={credentials.openaiKey ?? ''} disabled={busy}
-                    onChange={(e) => setCredentials((v) => ({ ...v, openaiKey: e.target.value }))} />
+                    maxLength={512} value={credentials.openrouterKey ?? ''} disabled={busy}
+                    onChange={(e) => setCredentials((v) => ({ ...v, openrouterKey: e.target.value }))} />
                 </Field>
                 <Choices label="Assistant model" disabled={busy} value={credentials.chatModel ?? DEFAULT_CHAT_MODEL}
-                  options={CHAT_MODELS.map((model) => ({ value: model, label: model }))}
+                  options={CHAT_MODELS.map((model) => ({ value: model, label: CHAT_MODEL_LABELS[model] }))}
                   onChange={(chatModel) => setCredentials((v) => ({ ...v, chatModel }))} />
                 <p className="text-xs text-tertiary">
-                  Semantic search uses text-embedding-3-small. Setup only checks model access;
-                  questions and searches can incur OpenAI API charges. Leave all three Mainnet
+                  Semantic search uses free Nemotron 3.5 Embed 1B. Setup checks your key and free model listings without inference.
+                  Free quotas and availability apply; paid fallbacks are disabled. Create a key at openrouter.ai/settings/keys. Leave all three Mainnet
                   fields empty for AI-only setup. Never enter secrets in workspace notes.
                 </p>
               </div>

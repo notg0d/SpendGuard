@@ -55,7 +55,7 @@ try {
   assert.equal(configuration.network, 'mainnet');
   assert.equal(configuration.tatumConfigured, false);
   assert.equal(configuration.walrusConfigured, false);
-  assert.equal(configuration.openaiConfigured, false);
+  assert.equal(configuration.aiConfigured, false);
   assert.equal(
     (await (await fetch(root + '/api/subsense/auth/session')).json())
       .authenticated,

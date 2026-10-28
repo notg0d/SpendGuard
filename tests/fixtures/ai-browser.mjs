@@ -40,19 +40,19 @@ app.get('/__test/wallet.js', (_req, res) => res.type('application/javascript').s
 app.use('/api/subsense', createWalletRouter({ store, origin,
   connect: async () => { throw new Error('No live Mainnet provider operations in this fixture.'); },
   verifyAI: async (credentials) => {
-    if (credentials.openaiKey !== 'test-only-browser-openai-key') throw new Error('Use the synthetic test key only.');
+    if (credentials.openrouterKey !== 'test-only-browser-openrouter-key') throw new Error('Use the synthetic test key only.');
     stats.verify++;
   },
   aiRequest: async (path, _key, body) => {
     stats.inference++;
     if (path === 'embeddings') return { data: body.input.map((_, index) => ({ index,
       embedding: Array.from({ length: 256 }, (_, i) => i === 0 ? 1 : 0) })), usage: { total_tokens: 42 } };
-    const input = JSON.parse(body.input);
+    const input = JSON.parse(body.messages[1].content);
     stats.modes.push(input.task); stats.contextCounts.push(input.documents.length);
-    return { status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify({
+    return { choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: JSON.stringify({
       answer: 'MOCK provider response: client handoffs explain your essential service. Review renewals manually; nothing was changed.',
       sourceIds: input.documents.map((d) => d.id),
-    }) }] }], usage: { input_tokens: 100, output_tokens: 30, total_tokens: 130 } };
+    }) } }], usage: { prompt_tokens: 100, completion_tokens: 30, total_tokens: 130 } };
   },
 }));
 app.use(express.static('dist', { index: false }));

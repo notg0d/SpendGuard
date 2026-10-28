@@ -256,7 +256,7 @@ export default function SettingsView({
           </li>
           <li>
             AI requests explicitly send your question and selected subscriptions
-            or decisions to OpenAI. They may incur API charges. No automatic
+            or decisions to OpenRouter and its model provider. Only free models are enabled. No automatic
             requests, external actions, or persistent AI chat history.
           </li>
           <li>

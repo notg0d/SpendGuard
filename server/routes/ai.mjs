@@ -5,8 +5,8 @@ export function createAIRouter({ store, request }) {
   const router = Router();
   router.post('/ai/run', async (req, res) => {
     const session = req.walletSession;
-    if (!session.credentials?.openaiKey)
-      return res.status(409).json({ message: 'Unlock a vault containing your OpenAI key in Connections.' });
+    if (!session.credentials?.openrouterKey)
+      return res.status(409).json({ message: 'Unlock a vault containing your OpenRouter key in Connections.' });
     if (session.connecting || session.aiBusy)
       return res.status(409).json({ message: 'Another credential check or AI request is in progress.' });
     let input;

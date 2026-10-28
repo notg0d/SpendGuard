@@ -40,7 +40,7 @@ export default function AssistantView({ workspace, connections, locked, onBusy, 
       .map((d) => ({ id: `decision:${d.id}`, label: d.serviceName, detail: `${d.action} · ${d.at.slice(0, 10)}`, content: d.reason })),
   ];
   const activeIds = new Set(records.filter((r) => selected.has(r.id)).map((r) => r.id));
-  const ready = Boolean(connections?.openaiConfigured);
+  const ready = Boolean(connections?.aiConfigured);
   const disabled = busy || locked || workspace.sample;
   async function submit() {
     if (operation.current) return;
@@ -64,13 +64,13 @@ export default function AssistantView({ workspace, connections, locked, onBusy, 
   return (
     <div className="space-y-2xl">
       {!ready && <Notice>
-        Add your OpenAI API key to the encrypted vault in Connections to enable AI.
+        Add your OpenRouter API key to the encrypted vault in Connections to enable free AI.
         <Button className="mt-lg" onClick={onConnections}>Open Connections</Button>
       </Notice>}
       {workspace.sample && <Notice>Start an empty workspace in Settings before using personal AI context.</Notice>}
       <section className="space-y-xl rounded-xl border border-secondary bg-primary p-2xl">
         <SectionHeading title="Your context, your question" description="EXPLICIT REQUESTS · NO AUTONOMOUS ACTIONS"
-          action={<Badge tone={ready ? 'success' : 'gray'}>{ready ? 'OpenAI ready' : 'AI locked'}</Badge>} />
+          action={<Badge tone={ready ? 'success' : 'gray'}>{ready ? 'Free AI ready' : 'AI locked'}</Badge>} />
         <form className="space-y-xl" onSubmit={(e) => { e.preventDefault(); void submit(); }}>
           <Choices label="What would you like to do?" value={mode} disabled={disabled}
             options={[{ value: 'ask', label: 'Ask a question' }, { value: 'explain', label: 'Explain decisions' },
@@ -88,7 +88,7 @@ export default function AssistantView({ workspace, connections, locked, onBusy, 
             </div>
             <p className="text-xs text-tertiary">
               Select specific records. Names, prices, dates, usage, importance, notes and reasons in selected
-              records are sent to OpenAI; AI advice also includes your {money(workspace.budgetCents)} planning budget.
+              records are sent to OpenRouter and its model provider; AI advice also includes your {money(workspace.budgetCents)} planning budget.
               Wallet addresses, API keys, payment evidence and Walrus receipts are not context.
               Recall remote memories in Connections first if you want to select them here.
             </p>
@@ -111,16 +111,16 @@ export default function AssistantView({ workspace, connections, locked, onBusy, 
           <label className="flex items-start gap-lg text-sm text-secondary">
             <input type="checkbox" className="mt-xxs size-4 shrink-0 rounded-xs border border-primary focus-visible:ring-2 focus-visible:ring-focus-ring"
               checked={consent} disabled={disabled || !ready || !activeIds.size} onChange={(e) => setConsent(e.target.checked)} />
-            <span>I agree to send this question and selected context to OpenAI for this request, which may incur API charges.</span>
+            <span>I agree to send this question and selected context to OpenRouter and its model provider for this free-model request.</span>
           </label>
           <p className="text-xs text-tertiary">
-            Answers use {connections?.chatModel ?? 'the vault’s selected chat model'}; search uses text-embedding-3-small.
-            Responses request store:false, but OpenAI’s own data policies still apply. No tools or automatic retries.
+            Answers use {connections?.chatModel ?? 'the vault’s selected free chat model'}; search uses free Nemotron 3.5 Embed 1B.
+            Routing excludes providers that collect data, but provider privacy policies still apply. Free quotas apply; no paid fallbacks, tools or automatic retries.
             Search caches embeddings only in the temporary session; locking clears them. Results are not saved.
           </p>
           <Button type="submit" variant="primary" disabled={disabled || !ready || !consent || !query.trim() || !activeIds.size}>
             {mode === 'search' ? <Search size={16} className="shrink-0" aria-hidden="true" /> : <Sparkles size={16} className="shrink-0" aria-hidden="true" />}
-            {busy ? 'Working…' : mode === 'search' ? 'Search with OpenAI' : 'Ask OpenAI'}
+            {busy ? 'Working…' : mode === 'search' ? 'Search context' : 'Ask assistant'}
           </Button>
         </form>
       </section>
@@ -141,7 +141,7 @@ export default function AssistantView({ workspace, connections, locked, onBusy, 
               <h3 className="text-sm font-medium">Context references</h3>
               <ul className="mt-sm space-y-xs text-xs text-tertiary">{result.sources!.map((source) => <li className="break-words" key={source.id}>{source.label} · {source.kind}</li>)}</ul>
             </div>}
-            <p className="text-xs text-tertiary">{result.model} · {result.contextCount} selected records · {result.usage?.total_tokens ?? ((result.usage?.input_tokens ?? 0) + (result.usage?.output_tokens ?? 0))} reported tokens. Check OpenAI usage for actual billing. Advice may be wrong; review it yourself.</p>
+            <p className="text-xs text-tertiary">{result.model} · {result.contextCount} selected records · {result.usage?.total_tokens ?? ((result.usage?.input_tokens ?? 0) + (result.usage?.output_tokens ?? 0))} reported tokens. Free-model quota applies. Advice may be wrong; review it yourself.</p>
             <Button onClick={() => setResult(undefined)}>Clear result</Button>
           </>}
       </section>

@@ -23,6 +23,8 @@ export async function openRouterRequest(path, key, body, { fetcher = fetch, sign
   const inference = ['embeddings', 'chat/completions'].includes(path);
   if (inference && !(path === 'embeddings' ? body?.model === EMBEDDING_MODEL : CHAT_MODELS.includes(body?.model)))
     throw new AIError('Only supported free models are allowed.', 400);
+  if (inference && ['models', 'plugins', 'tools', 'route'].some((field) => body[field] !== undefined))
+    throw new AIError('Fallback models, plugins and tools are disabled.', 400);
   if (!inference && body !== undefined) throw new AIError('Invalid AI operation.', 400);
   try {
     const response = await fetcher(`https://openrouter.ai/api/v1/${path}`, {
@@ -62,7 +64,7 @@ export async function verifyOpenRouter(credentials, options) {
   const model = credentials.chatModel ?? DEFAULT_CHAT_MODEL;
   if (!credentials.openrouterKey || !CHAT_MODELS.includes(model)) throw new AIError('Choose a supported free assistant model.', 400);
   const key = await openRouterRequest('key', credentials.openrouterKey, undefined, options);
-  if (!key.data || key.data.is_management_key || key.data.is_provisioning_key)
+  if (!key.data || typeof key.data !== 'object' || Array.isArray(key.data) || key.data.is_management_key || key.data.is_provisioning_key)
     throw new AIError('Use an OpenRouter inference API key, not a management key.');
   const chat = await openRouterRequest('models', credentials.openrouterKey, undefined, options);
   const embeddings = await openRouterRequest('embeddings/models', credentials.openrouterKey, undefined, options);
@@ -70,7 +72,9 @@ export async function verifyOpenRouter(credentials, options) {
     ['prompt', 'completion'].every((field) => ['0', 0].includes(item.pricing?.[field])) &&
     Object.values(item.pricing).every((price) => ['0', 0].includes(price)));
   const selected = free(chat, model);
-  if (!selected || !selected.supported_parameters?.includes('response_format') || !free(embeddings, EMBEDDING_MODEL))
+  if (!selected || !selected.supported_parameters?.includes('response_format') ||
+    (model !== 'recursive/flint-v1.0:free' && !selected.supported_parameters.includes('structured_outputs')) ||
+    !free(embeddings, EMBEDDING_MODEL))
     throw new AIError('The selected chat and embedding models must still be listed as free and support the requested output. Choose another free model or try later.');
 }
 
@@ -103,7 +107,7 @@ function cosine(a, b) {
   return aa && bb ? dot / Math.sqrt(aa * bb) : 0;
 }
 function vectors(result, count) {
-  if (!Array.isArray(result.data) || result.data.length !== count) throw new AIError('AI returned invalid embeddings.');
+  if (!Array.isArray(result?.data) || result.data.length !== count || result.data.some((row) => !row || typeof row !== 'object')) throw new AIError('AI returned invalid embeddings.');
   const sorted = [...result.data].sort((a, b) => a.index - b.index);
   const dimensions = sorted[0]?.embedding?.length;
   if (!Number.isSafeInteger(dimensions) || dimensions < 1 || dimensions > 4096 ||
@@ -157,7 +161,7 @@ export async function runAI(input, session, { request = openRouterRequest, signa
     } } },
   }, { signal });
   signal?.throwIfAborted();
-  const choice = result.choices?.[0];
+  const choice = result?.choices?.[0];
   if (choice?.finish_reason !== 'stop' || choice.message?.tool_calls?.length || choice.message?.refusal)
     throw new AIError('The model did not finish an answer. No advice was applied; no paid fallback was used.');
   const output = choice.message?.content;

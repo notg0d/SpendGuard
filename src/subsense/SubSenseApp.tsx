@@ -142,7 +142,7 @@ export default function SubSenseApp() {
     loadConnections()
       .then(setConnections)
       .catch((e) => setError(e.message));
-  }, [session.credentialsConfigured, session.openaiConfigured, session.vaultUnlocked]);
+  }, [session.credentialsConfigured, session.aiConfigured, session.vaultUnlocked]);
   const network = connections?.network;
   const networkLabel = connections?.networkLabel ?? 'Network not loaded';
   const [search, setSearch] = useState('');

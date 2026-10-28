@@ -7,7 +7,7 @@ SubSense tracks manually entered subscriptions, calculates recurring USD
 commitments, and remembers why you kept, downgraded, or planned to cancel a
 service. A deterministic recommendation engine compares usage-only advice with
 your latest applicable feedback. Sign in with a Sui wallet, unlock your encrypted
-credential vault, and optionally connect your own MemWal Mainnet account and OpenAI
+credential vault, and optionally connect your own MemWal Mainnet account and OpenRouter
 API key. AI can explain decisions, plan renewals and semantically search selected
 context. No bank connection, automatic cancellation, or autonomous payment is involved.
 
@@ -118,34 +118,40 @@ Verification is not proof that a vendor recognised a bill. Replay detection is
 limited to this browser workspace. USD budgeting is separate from native SUI
 payment evidence. No funds are sent.
 
-### OpenAI assistant and semantic search
+### Free AI assistant and semantic search
 
-Add an OpenAI API key in Connections (use **Replace credentials** for an existing
+Add an [OpenRouter API key](https://openrouter.ai/settings/keys) in Connections (use **Replace credentials** for an existing
 vault, re-entering all credentials you want to retain). The key is encrypted in
 the same vault, never stored in workspace backups or reused from `.env`. You can
 leave all Mainnet provider fields empty for AI-only setup; wallet sign-in is still
-required. Setup checks `/v1/models` for chat and embedding access, not paid inference.
+required. Setup checks `/api/v1/key`, `/api/v1/models` and `/api/v1/embeddings/models`, without inference.
 
 In **AI assistant**, choose Ask, Explain, Plan renewals or Semantic search, select
 up to 100 records, enter a question and confirm consent for each request. Only
-selected validated subscription/decision context goes to OpenAI. AI advice also
+selected validated subscription/decision context goes to OpenRouter and its model provider. AI advice also
 includes the planning budget and deterministic totals/rules for the selected
 subset. Recall MemWal decisions explicitly in Connections to make them selectable.
 Wallet addresses, keys, payment evidence and remote receipts are not AI context.
 
-The backend uses pinned `https://api.openai.com/v1/responses` with `store:false`
-and structured, tool-free output; embeddings use `text-embedding-3-small` (256
-dimensions). The default chat model is `gpt-4.1-mini`; `gpt-4.1` and `gpt-5-mini`
-are selectable subject to project access. No retries or automatic requests.
+The backend uses pinned `https://openrouter.ai/api/v1/chat/completions` with
+validated, tool-free JSON output; embeddings use `nvidia/nemotron-3.5-embed-1b:free`.
+Default chat: `nvidia/nemotron-3.5-super-vl:free`; alternatives are
+`recursive/flint-v1.0:free` and `xingchen-agi/xing4.0-29b-a4b:free`.
+Only allowlisted `:free` models are accepted. Paid/model/provider fallbacks,
+plugins, tools, retries and automatic requests are disabled; all upstream prices
+are capped at zero. Setup fails if catalog pricing is no longer zero.
 Each session allows one AI request at a time and up to 12 per minute. Embeddings
 are cached in that wallet session only and cleared on lock/sign-out/expiry. AI
 results/chat are not persisted. Budget rules are unchanged and work without AI.
 
-OpenAI may charge for questions and search; set project spending limits and check
-usage. `store:false` is not a zero-retention guarantee: OpenAI's own data policies
-apply. Similarity and source references are not verified proof. Advice can be wrong
-and never changes subscriptions or performs payments. Live OpenAI compatibility
-and billing have not been verified with a real user key; automated tests use mocks.
+Free quotas, model availability and key permissions still apply. Privacy routing
+uses `data_collection:deny`, which can exclude all available free endpoints;
+OpenRouter and provider policies still apply, and zero retention is not promised.
+Similarity and source references are not verified proof. Advice can be wrong and
+never changes subscriptions or performs payments. Live authenticated inference
+has not been verified with a real user key; automated tests use mocks.
+Older provider vaults are preserved but require explicit credential replacement;
+their keys are never forwarded to OpenRouter. See [AI setup](docs/AI.md).
 
 ## Product and privacy boundaries
 
@@ -184,12 +190,10 @@ and billing have not been verified with a real user key; automated tests use moc
 
 ## Verification and release status
 
-See [verification notes](docs/VERIFICATION.md),
-[development plan](docs/DEVELOPMENT_PLAN.md), and
+See [verification notes](docs/VERIFICATION.md) and
 [demo/submission checklist](docs/DEMO.md).
 
-The refined UI follows the [UI refinement plan](docs/UI_REFINEMENT_PLAN.md),
-using composition research from Uniswap, Aave and Zerion with the existing Tatum
+The UI uses composition research from Uniswap, Aave and Zerion with the existing Tatum
 tokens. It includes a financial summary, live category breakdown, compact service
 inventory, decision evidence, and keyboard-accessible mobile navigation.
 
@@ -209,10 +213,10 @@ these are not substitutes for dependency maintenance.
 
 ## Reference attribution
 
-This repository began from the friend's SpendGuard scaffold. The original UI is
-retained in `src/SpendGuardReference.tsx`; original service and route source is
-also retained for provenance. They are not mounted in SubSense. In particular,
-legacy mock Walrus receipts and arbitrary proxy routes are not served.
+This repository began from the friend's SpendGuard scaffold. The unused reference
+UI, service adapters and unmounted mock/proxy routes were removed during cleanup.
+The app retains the original project's provenance; removing unused source does
+not remove the obligation to confirm reuse permission and provide attribution.
 
 **Before publishing:** confirm the original author's reuse permission, add their
 preferred name/link and licence attribution, and verify third-party licence

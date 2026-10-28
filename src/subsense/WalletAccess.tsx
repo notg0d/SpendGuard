@@ -278,7 +278,7 @@ function WalletGate({ children }: { children: ReactNode }) {
               ],
               [
                 'Choose your optional integrations',
-                'OpenAI for assistance; verified MemWal Mainnet for memory uploads.',
+                'Free AI assistance via OpenRouter; verified MemWal Mainnet for memory uploads.',
               ],
             ].map(([title, detail], index) => (
               <li key={title} className="flex gap-lg">

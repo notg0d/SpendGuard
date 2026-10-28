@@ -3,7 +3,7 @@ import type { Network } from '../../shared/subsense.mjs';
 export interface Connections {
   tatumConfigured: boolean;
   walrusConfigured: boolean;
-  openaiConfigured?: boolean;
+  aiConfigured?: boolean;
   chatModel?: string;
   embeddingModel?: string;
   walletAuthenticated: boolean;
@@ -45,7 +45,7 @@ export interface WalletSession {
   expiresAt?: string;
   credentialsConfigured?: boolean;
   vaultUnlocked?: boolean;
-  openaiConfigured?: boolean;
+  aiConfigured?: boolean;
 }
 export async function api<T>(
   path: string,

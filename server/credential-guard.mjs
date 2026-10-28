@@ -52,9 +52,11 @@ export function credentialGuard(req, res, next) {
       req.walletSession?.credentials?.tatumKey,
       req.walletSession?.credentials?.memwalKey,
       req.walletSession?.credentials?.openaiKey,
+      req.walletSession?.credentials?.openrouterKey,
       req.body?.tatumKey,
       req.body?.memwalKey,
       req.body?.openaiKey,
+      req.body?.openrouterKey,
     ];
     if (typeof text === 'string')
       for (const value of values) {

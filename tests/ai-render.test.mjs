@@ -28,10 +28,11 @@ test('AI screens render with consent off, no automatic requests and no sample-lo
     assert.match(html, /Semantic search/); assert.match(html, /Explain decisions/); assert.match(html, /Plan renewals/);
     assert.match(html, /type="checkbox"[^>]*disabled/);
     assert.doesNotMatch(html, /type="checkbox"[^>]*checked/);
-    assert.match(html, /<button[^>]*disabled=""[^>]*>[\s\S]*?Ask OpenAI/);
+    assert.match(html, /<button[^>]*disabled=""[^>]*>[\s\S]*?Ask assistant/);
     const vault = renderToString(createElement(module.Vault, { onChanged: async () => {}, onBusy() {} }));
-    assert.match(vault, /OpenAI API key \(optional\)/); assert.match(vault, /AI-only setup/);
-    assert.doesNotMatch(vault, /name="openaiKey"[^>]*value="sk-/);
+    assert.match(vault, /OpenRouter API key \(optional\)/); assert.match(vault, /AI-only setup/);
+    assert.doesNotMatch(vault + html, /OpenAI|gpt-4|text-embedding-3-small/);
+    assert.match(vault, /Nemotron 3.5 Super VL/); assert.match(vault, /Flint v1.0/);
     const settings = renderToString(createElement(module.Settings, { workspace, commit() {}, replace() {}, locked: false, busy: false, wallet: '0x3' }));
     assert.doesNotMatch(settings, /Load sample workspace/);
   } finally { globalThis.fetch = original; }
