@@ -1,14 +1,74 @@
 # Verification — 28 October 2026
 
+## Per-request demo-data privacy opt-in
+
+- Added an optional, unchecked assistant checkbox explicitly attesting synthetic
+  question/context and accepting provider retention/training. Sharing consent is
+  still separate. Both choices reset on requests and context/access changes.
+- Validated boolean opt-in reaches chat/embedding routing only for that request;
+  provider overrides cannot enable it implicitly. It is not saved in credentials,
+  workspace or session state. Results label the requested policy, and embedding
+  cache entries are partitioned by privacy choice.
+- Free-only model allowlists, zero price caps, disabled fallbacks/tools/retries,
+  output validation, encryption and wallet gates remain unchanged. Errors after
+  opt-in explain that OpenRouter account privacy restrictions cannot be overridden.
+- `npm run check` passed all **72 tests**, TypeScript, production build and isolated
+  production HTTP smoke. Tests use mocked providers; no live authenticated
+  inference, provider privacy-setting changes, Mainnet upload or payment occurred.
+- The local-only browser fixture verified generated-wallet signature login and
+  AI-only encrypted-vault setup with zero inference during setup. Explicit demo
+  chat → strict chat → demo search sent policies `allow`, `deny`, `allow`. Results
+  labelled the policy; sharing consent and demo opt-in reset after completion.
+- Browser checks also confirmed resets on question/task/selection changes and
+  an injected mock failure. Toggling demo opt-in cleared separate sharing consent
+  and left submit disabled until consent was confirmed again.
+- Rendered-DOM iframe checks at 390/768/1440 CSS pixels in both themes found no
+  horizontal document overflow; the new label/hint fit and theme tokens resolved.
+  Inspected console contained no warnings or errors. Pointer tools reported
+  `UnknownVizError`, and screenshot capture required an unavailable visible tab;
+  these checks used DOM actions/layout inspection, not screenshot review.
+- Signed out the generated-wallet session, removed only its synthetic vault,
+  workspace and connection state, closed the test tab and stopped fixture PID
+  28756. The original backend was not restarted; restart it to load this update.
+- Successful authenticated OpenRouter inference after opt-in remains unverified;
+  account Privacy settings/guardrails can still block free endpoints.
+- Final `git diff --check` passed with line-ending warnings only. Changes remain
+  uncommitted; no deployment or publication occurred.
+
 ## Repository cleanup
 
 - Removed nine unused reference UI/service/mock-route files, two obsolete build
   plans and archived Testnet setup instructions; attribution and current guides remain.
-- `npm run check` still passes all **62 tests**, typechecking, build and production
-  HTTP smoke. Generated `dist/` output is removed after verification; regenerate
-  it with `npm run build` before `npm start`.
-- Renaming the project folder to `SubSense` was blocked by Windows access denial;
-  the existing directory, Git history, credentials and unrelated changes are intact.
+- Cleanup verification passed all **62 tests**, typechecking, build and production
+  HTTP smoke. Generated `dist/` output was removed after that check; the subsequent
+  AI diagnosis check below regenerates the production build.
+- The first rename attempt was blocked by Windows access denial. The user later
+  moved the project to `C:\Users\Uwaise\u\SubSense`; the active folder name is now correct.
+
+## AI error diagnosis update
+
+- Rechecked public metadata for all three chat endpoints and the embedding endpoint.
+  They are still listed with zero prompt/completion prices and the expected chat
+  output capabilities. This does not establish privacy eligibility, account quota,
+  or successful authenticated inference.
+- Aligned all zero-price caps with the current OpenAPI decimal-string schema;
+  strict data-collection denial remains the default; required parameters and
+  disabled fallbacks remain enforced.
+  The routing guide also shows numeric price examples, so the old numeric format
+  is not established as the cause of the user's failure.
+- Replaced the misleading generic failure with bounded, secret-safe HTTP/category
+  diagnostics, including privacy/output filtering, key/account restrictions,
+  provider quota/availability, and HTTP-200 error envelopes. No raw upstream
+  message, metadata, flagged input or request ID is forwarded or logged.
+- Added mocked regressions for both transports' zero-price constraints, classified
+  failures, bounded/unreadable bodies, error envelopes, cancellation/timeout, and
+  authenticated route diagnostics/busy-gate cleanup. See `AI.md` for retry steps.
+- `npm run check` passed all **68 tests**, TypeScript, production build and isolated
+  production HTTP smoke. `git diff --check` passed with line-ending warnings only.
+- The original failed response was discarded by the old code. The user's later
+  explicit retry reported `PRIVACY_BLOCKED` with OpenRouter HTTP 404, establishing
+  a data-policy routing block for that retry. No user key or context was sent by
+  the agent in this investigation; agent-run inference checks remain mocked.
 
 ## Current free-model gateway update
 

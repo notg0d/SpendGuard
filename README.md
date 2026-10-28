@@ -145,8 +145,12 @@ are cached in that wallet session only and cleared on lock/sign-out/expiry. AI
 results/chat are not persisted. Budget rules are unchanged and work without AI.
 
 Free quotas, model availability and key permissions still apply. Privacy routing
-uses `data_collection:deny`, which can exclude all available free endpoints;
-OpenRouter and provider policies still apply, and zero retention is not promised.
+defaults to `data_collection:deny`, which can exclude all available free endpoints.
+For **synthetic demo data only**, the assistant offers an unchecked, per-request
+opt-in permitting providers that may retain or train on the submitted data. It
+resets after each request or context change and never enables paid fallbacks.
+OpenRouter account Privacy settings/guardrails can still block these requests;
+the app cannot override them. Provider policies apply; zero retention is not promised.
 Similarity and source references are not verified proof. Advice can be wrong and
 never changes subscriptions or performs payments. Live authenticated inference
 has not been verified with a real user key; automated tests use mocks.

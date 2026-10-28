@@ -23,6 +23,12 @@
 7. **Close (10s):** local-first decisions, explicit external memory, no autonomous
    financial action. Do not present pending integrations as working evidence.
 
+Optional AI segment: use synthetic context only. If strict privacy has no free
+endpoint, explicitly check the assistant's demo-data opt-in (providers may retain
+or train on that data), then confirm sharing for that request. The option resets
+afterward. Free-only caps remain enforced; OpenRouter account Privacy settings can
+still block it. Do not suggest relaxed privacy is required by the hackathon rules.
+
 ## Owner tasks before submission
 
 - [ ] Confirm SpendGuard reuse permission; add the author's preferred attribution

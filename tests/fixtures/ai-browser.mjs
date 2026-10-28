@@ -32,7 +32,7 @@ const bundle = await build({ stdin: { contents: `
   };
   registerWallet(wallet);
 `, resolveDir: process.cwd() }, bundle: true, write: false, format: 'iife', platform: 'browser' });
-const stats = { inference: 0, verify: 0, modes: [], contextCounts: [] };
+const stats = { inference: 0, verify: 0, modes: [], contextCounts: [], dataCollections: [] };
 const store = createSessionStore();
 const app = express(); app.use(express.json({ limit: '192kb', inflate: false })); app.use(credentialGuard);
 app.get('/__test/stats', (_req, res) => res.json(stats));
@@ -45,6 +45,7 @@ app.use('/api/subsense', createWalletRouter({ store, origin,
   },
   aiRequest: async (path, _key, body) => {
     stats.inference++;
+    stats.dataCollections.push(body.provider.data_collection);
     if (path === 'embeddings') return { data: body.input.map((_, index) => ({ index,
       embedding: Array.from({ length: 256 }, (_, i) => i === 0 ? 1 : 0) })), usage: { total_tokens: 42 } };
     const input = JSON.parse(body.messages[1].content);

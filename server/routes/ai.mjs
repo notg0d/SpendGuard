@@ -28,6 +28,7 @@ export function createAIRouter({ store, request }) {
     } catch (error) {
       if (!res.destroyed) res.status(error instanceof AIError ? error.status : 502).json({
         message: error instanceof AIError ? error.message : 'AI request failed. No workspace changes were made.',
+        ...(error instanceof AIError && error.diagnostic ? { diagnostic: error.diagnostic } : {}),
       });
     } finally {
       res.off('close', abort);

@@ -28,6 +28,10 @@ test('AI screens render with consent off, no automatic requests and no sample-lo
     assert.match(html, /Semantic search/); assert.match(html, /Explain decisions/); assert.match(html, /Plan renewals/);
     assert.match(html, /type="checkbox"[^>]*disabled/);
     assert.doesNotMatch(html, /type="checkbox"[^>]*checked/);
+    assert.match(html, /Allow data-collecting providers for this demo request/);
+    assert.match(html, /synthetic demo data/); assert.match(html, /retain or train/);
+    assert.match(html, /Strict default/); assert.match(html, /cannot override/);
+    assert.match(html, /aria-describedby="demo-privacy-hint"/);
     assert.match(html, /<button[^>]*disabled=""[^>]*>[\s\S]*?Ask assistant/);
     const vault = renderToString(createElement(module.Vault, { onChanged: async () => {}, onBusy() {} }));
     assert.match(vault, /OpenRouter API key \(optional\)/); assert.match(vault, /AI-only setup/);

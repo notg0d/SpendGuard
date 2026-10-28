@@ -66,7 +66,202 @@ test('OpenRouter transport authenticates key, verifies free catalogs without inf
   const sent = JSON.parse(calls.at(-1).options.body);
   assert.equal(sent.provider.allow_fallbacks, false);
   assert.equal(sent.provider.data_collection, 'deny');
-  assert.deepEqual(sent.provider.max_price, { prompt: 0, completion: 0, request: 0, image: 0 });
+  assert.deepEqual(sent.provider.max_price, { prompt: '0', completion: '0', request: '0', image: '0' });
+});
+
+test('OpenRouter errors distinguish routing, privacy, output, account and outages without disclosing upstream text', async () => {
+  const scenarios = [
+    [400, 'REQUEST_REJECTED'], [401, 'KEY_REJECTED'], [402, 'ACCOUNT_LIMIT'], [403, 'ACCESS_BLOCKED'],
+    [404, 'NO_FREE_ENDPOINT'], [408, 'PROVIDER_TIMEOUT'], [413, 'CONTEXT_TOO_LARGE'],
+    [422, 'REQUEST_REJECTED'], [429, 'FREE_QUOTA'], [500, 'PROVIDER_UNAVAILABLE'],
+    [502, 'PROVIDER_UNAVAILABLE'], [503, 'NO_FREE_ENDPOINT'], [504, 'PROVIDER_TIMEOUT'],
+    [524, 'PROVIDER_TIMEOUT'], [529, 'PROVIDER_BUSY'],
+    [404, 'PRIVACY_BLOCKED', 'No endpoints found that match your data policy.'],
+    [404, 'OUTPUT_UNSUPPORTED', 'No endpoints found that support structured output.'],
+    [503, 'OUTPUT_UNSUPPORTED', 'No providers support all requested parameters.'],
+    [503, 'PROVIDER_BUSY', 'Busy', { error_type: 'provider_overloaded' }],
+    [403, 'CONTENT_BLOCKED', 'Flagged', { error_type: 'content_policy_violation' }],
+    [403, 'ACCOUNT_LIMIT', 'Budget exceeded', { limit_source: 'openrouter_key_limit' }],
+    [400, 'CONTEXT_TOO_LARGE', 'Too long', { error_type: 'context_length_exceeded' }],
+  ];
+  for (const [status, code, message = 'Private upstream error', metadata = {}] of scenarios) {
+    let calls = 0;
+    await assert.rejects(openRouterRequest('chat/completions', credentials.openrouterKey, { model: DEFAULT_CHAT_MODEL }, {
+      fetcher: async () => {
+        calls++;
+        return new Response(JSON.stringify({ error: { code: status,
+          message: `${message} ${credentials.openrouterKey} ${service.notes}`,
+          metadata: { ...metadata, raw: credentials.openrouterKey, flagged_input: service.notes } },
+          user_id: 'private-provider-user', id: 'private-request-id' }), { status });
+      },
+    }), (error) => {
+      assert.deepEqual(error.diagnostic, { code, upstreamStatus: status });
+      assert.equal(error.status, code === 'FREE_QUOTA' ? 429 : 502);
+      assert.match(error.message, new RegExp(`OpenRouter HTTP ${status}`));
+      assert.match(error.message, /No automatic retry or paid fallback/);
+      for (const secret of [credentials.openrouterKey, service.notes, 'private-provider-user', 'private-request-id'])
+        assert.ok(!JSON.stringify(error).includes(secret) && !error.message.includes(secret));
+      return true;
+    });
+    assert.equal(calls, 1);
+  }
+});
+
+test('malformed, oversized and unreadable OpenRouter error bodies are bounded and fall back to HTTP classification', async () => {
+  for (const content of ['', '<html>Private gateway error</html>', 'x'.repeat(16385)]) {
+    await assert.rejects(openRouterRequest('embeddings', credentials.openrouterKey, { model: EMBEDDING_MODEL }, {
+      fetcher: async () => new Response(content, { status: 503 }),
+    }), (error) => error.diagnostic?.code === 'NO_FREE_ENDPOINT' && error.diagnostic.upstreamStatus === 503);
+  }
+  let pulls = 0, cancelled = false;
+  await assert.rejects(openRouterRequest('chat/completions', credentials.openrouterKey, { model: DEFAULT_CHAT_MODEL }, {
+    fetcher: async () => new Response(new ReadableStream({
+      pull(controller) { pulls++; controller.enqueue(new Uint8Array(16385)); },
+      cancel() { cancelled = true; },
+    }), { status: 400 }),
+  }), (error) => error.diagnostic?.code === 'REQUEST_REJECTED');
+  assert.equal(cancelled, true); assert.ok(pulls <= 2);
+  await assert.rejects(openRouterRequest('chat/completions', credentials.openrouterKey, { model: DEFAULT_CHAT_MODEL }, {
+    fetcher: async () => new Response(new ReadableStream({ start(controller) { controller.error(new Error(credentials.openrouterKey)); } }), { status: 502 }),
+  }), (error) => error.diagnostic?.code === 'PROVIDER_UNAVAILABLE' && !error.message.includes(credentials.openrouterKey));
+});
+
+test('OpenRouter HTTP-200 error envelopes and choice errors cannot become advice or embeddings', async () => {
+  for (const path of ['chat/completions', 'embeddings']) {
+    for (const envelope of [
+      { error: { code: 429, message: credentials.openrouterKey } },
+      { choices: [{ finish_reason: 'error', error: { code: 429, message: credentials.openrouterKey } }] },
+      { choices: completed().choices, error: { code: 429, message: credentials.openrouterKey } },
+    ]) {
+      await assert.rejects(openRouterRequest(path, credentials.openrouterKey, {
+        model: path === 'embeddings' ? EMBEDDING_MODEL : DEFAULT_CHAT_MODEL,
+      }, { fetcher: async () => new Response(JSON.stringify(envelope)) }), (error) => {
+        assert.equal(error.status, 429);
+        assert.deepEqual(error.diagnostic, { code: 'FREE_QUOTA', upstreamStatus: 200 });
+        assert.ok(!error.message.includes(credentials.openrouterKey));
+        return true;
+      });
+    }
+  }
+  for (const code of [credentials.openrouterKey, null, 999999, 200])
+    await assert.rejects(openRouterRequest('chat/completions', credentials.openrouterKey, { model: DEFAULT_CHAT_MODEL }, {
+      fetcher: async () => new Response(JSON.stringify({ error: { code, message: credentials.openrouterKey } })),
+    }), (error) => error.diagnostic?.code === 'PROVIDER_UNAVAILABLE');
+});
+
+test('both inference transports enforce decimal-string zero caps and retain strict privacy and output routing', async () => {
+  for (const path of ['chat/completions', 'embeddings']) {
+    let calls = 0;
+    await openRouterRequest(path, credentials.openrouterKey, {
+      model: path === 'embeddings' ? EMBEDDING_MODEL : DEFAULT_CHAT_MODEL,
+      provider: { data_collection: 'allow', allow_fallbacks: true, require_parameters: false, max_price: { request: '100' } },
+      ...(path === 'chat/completions' ? { response_format: { type: 'json_schema' } } : {}),
+    }, { fetcher: async (_url, options) => {
+      calls++;
+      const payload = JSON.parse(options.body);
+      assert.deepEqual(payload.provider, { allow_fallbacks: false, require_parameters: true, data_collection: 'deny',
+        max_price: { prompt: '0', completion: '0', request: '0', image: '0' } });
+      if (path === 'chat/completions') assert.equal(payload.response_format.type, 'json_schema');
+      assert.equal(options.redirect, 'error');
+      return new Response('{}');
+    } });
+    assert.equal(calls, 1);
+  }
+});
+
+test('demo privacy opt-in is strictly boolean and still requires separate request consent', async () => {
+  assert.equal(validateAIInput(body).allowDataCollection, false);
+  assert.equal(validateAIInput({ ...body, allowDataCollection: false }).allowDataCollection, false);
+  assert.equal(validateAIInput({ ...body, allowDataCollection: true }).allowDataCollection, true);
+  assert.equal(validateAIInput({ ...body, provider: { data_collection: 'allow' } }).allowDataCollection, false);
+  for (const allowDataCollection of ['true', 1, null, {}, []]) {
+    assert.throws(() => validateAIInput({ ...body, allowDataCollection }), /privacy option/);
+    await assert.rejects(openRouterRequest('chat/completions', credentials.openrouterKey, { model: DEFAULT_CHAT_MODEL }, {
+      allowDataCollection, fetcher: async () => assert.fail('Invalid privacy choice must not send'),
+    }), /privacy choice/);
+  }
+  assert.throws(() => validateAIInput({ ...body, consent: false, allowDataCollection: true }), /Confirm sharing/);
+  await assert.rejects(openRouterRequest('models', credentials.openrouterKey, undefined, {
+    allowDataCollection: true, fetcher: async () => assert.fail('Catalog checks cannot opt in'),
+  }), /privacy choice/);
+});
+
+test('demo opt-in reaches both transports once, preserves all free-only constraints and never sticks to a session', async () => {
+  const session = { credentials };
+  for (const mode of ['ask', 'explain', 'plan', 'search']) {
+    const policies = [];
+    const request = (path, key, payload, options) => openRouterRequest(path, key, payload, {
+      ...options, fetcher: async (_url, fetchOptions) => {
+        const sent = JSON.parse(fetchOptions.body);
+        policies.push(sent.provider.data_collection);
+        assert.equal(sent.provider.allow_fallbacks, false);
+        assert.equal(sent.provider.require_parameters, true);
+        assert.deepEqual(sent.provider.max_price, { prompt: '0', completion: '0', request: '0', image: '0' });
+        assert.equal(sent.model, mode === 'search' ? EMBEDDING_MODEL : DEFAULT_CHAT_MODEL);
+        assert.equal(sent.allowDataCollection, undefined);
+        for (const field of ['models', 'plugins', 'tools', 'route']) assert.equal(sent[field], undefined);
+        if (mode !== 'search') assert.equal(sent.response_format.type, 'json_schema');
+        return new Response(JSON.stringify(mode === 'search'
+          ? { data: sent.input.map((_, index) => embedding(index)) } : completed()));
+      },
+    });
+    for (const allowDataCollection of [false, true, false]) {
+      const result = await runAI(validateAIInput({ ...body, mode, allowDataCollection }), session, { request });
+      assert.equal(result.dataCollection, allowDataCollection ? 'allow' : 'deny');
+      assert.equal(session.allowDataCollection, undefined);
+      assert.equal(session.credentials.allowDataCollection, undefined);
+    }
+    assert.deepEqual(policies, ['deny', 'allow', 'deny']);
+  }
+});
+
+test('embedding cache entries stay separate across strict and demo-data requests', async () => {
+  const session = { credentials };
+  const lengths = [];
+  const request = async (_path, _key, payload, options) => {
+    lengths.push(payload.input.length);
+    assert.equal(payload.provider.data_collection, options.allowDataCollection ? 'allow' : 'deny');
+    return { data: payload.input.map((_, index) => embedding(index)) };
+  };
+  for (const allowDataCollection of [false, true, false, true])
+    await runAI(validateAIInput({ ...body, mode: 'search', allowDataCollection }), session, { request });
+  assert.deepEqual(lengths, [3, 3, 1, 1]);
+  assert.equal(session.aiCache.size, 4);
+});
+
+test('privacy errors after demo opt-in explain that account policies cannot be overridden and do not retry', async () => {
+  let calls = 0;
+  await assert.rejects(openRouterRequest('chat/completions', credentials.openrouterKey, { model: DEFAULT_CHAT_MODEL }, {
+    allowDataCollection: true, fetcher: async () => {
+      calls++;
+      return new Response(JSON.stringify({ error: { code: 404,
+        message: `No endpoints found that match your data policy. ${credentials.openrouterKey}` } }), { status: 404 });
+    },
+  }), (error) => {
+    assert.equal(error.diagnostic.code, 'PRIVACY_BLOCKED');
+    assert.match(error.message, /cannot override account Privacy/);
+    assert.doesNotMatch(error.message, /has not relaxed/);
+    assert.ok(!error.message.includes(credentials.openrouterKey));
+    return true;
+  });
+  assert.equal(calls, 1);
+});
+
+test('transport cancellation and timeout errors never disclose abort reasons or retry', async () => {
+  for (const reason of [new Error(credentials.openrouterKey), new DOMException('Private timeout detail', 'TimeoutError')]) {
+    const controller = new AbortController();
+    controller.abort(reason);
+    let calls = 0;
+    await assert.rejects(openRouterRequest('chat/completions', credentials.openrouterKey, { model: DEFAULT_CHAT_MODEL }, {
+      signal: controller.signal, fetcher: async () => { calls++; assert.fail('Aborted requests must not send'); },
+    }), (error) => {
+      assert.match(error.message, reason.name === 'TimeoutError' ? /timed out/ : /interrupted/);
+      assert.ok(!error.message.includes(credentials.openrouterKey));
+      assert.ok(!error.message.includes('Private timeout detail'));
+      return true;
+    });
+    assert.equal(calls, 0);
+  }
 });
 
 test('AI validation requires consent, bounds context, strips keys and remote proof, rejects demo data', () => {
@@ -152,7 +347,7 @@ test('AI advice uses authoritative rules, no tools or paid fallback and only sup
         calls++;
         assert.equal(path, 'chat/completions'); assert.equal(key, credentials.openrouterKey);
         assert.equal(payload.tools, undefined); assert.equal(payload.models, undefined);
-        assert.equal(payload.provider.allow_fallbacks, false); assert.equal(payload.provider.max_price.prompt, 0);
+        assert.equal(payload.provider.allow_fallbacks, false); assert.equal(payload.provider.max_price.prompt, '0');
         assert.equal(payload.max_tokens, 1800);
         const input = JSON.parse(payload.messages[1].content);
         assert.equal(input.deterministicTotals.monthly, 1500);
@@ -180,7 +375,7 @@ test('semantic search validates vectors, ranks context, reuses wallet-session ca
   let inputLengths = [];
   const request = async (path, _key, payload) => {
     assert.equal(path, 'embeddings'); assert.equal(payload.model, EMBEDDING_MODEL);
-    assert.equal(payload.dimensions, undefined); assert.equal(payload.provider.max_price.prompt, 0);
+    assert.equal(payload.dimensions, undefined); assert.equal(payload.provider.max_price.prompt, '0');
     inputLengths.push(payload.input.length);
     return { data: payload.input.map((_, i) => embedding(i, i === 1 ? 1 : 0)), usage: { total_tokens: 24 } };
   };
@@ -291,4 +486,49 @@ test('wallet AI routes gate identity/origin/network/consent, isolate keys, rate-
   } finally {
     release?.(); store.close(); await new Promise((resolve) => server.close(resolve));
   }
+});
+
+test('authenticated AI route returns only safe provider diagnostics and releases the busy gate after failure', async () => {
+  const store = createSessionStore();
+  const origin = 'http://localhost:3000';
+  const pair = Ed25519Keypair.generate();
+  const challenge = store.challenge(pair.getPublicKey().toSuiAddress(), origin);
+  const signed = await pair.signPersonalMessage(new TextEncoder().encode(challenge.message));
+  const session = await store.login(challenge.challengeId, signed.signature, origin);
+  session.credentials = credentials;
+  let status = 404;
+  const policies = [];
+  const app = express(); app.use(express.json()); app.use(credentialGuard);
+  app.use('/api/subsense', createWalletRouter({ store, origin, aiRequest: (path, key, payload, options) => {
+    policies.push(payload.provider.data_collection);
+    return openRouterRequest(path, key, payload, { ...options, fetcher: async () => status === 200
+      ? new Response(JSON.stringify(completed()))
+      : new Response(JSON.stringify({ error: { code: status,
+        message: `No endpoints found that match your data policy. ${key}`,
+        metadata: { raw: key, flagged_input: service.notes } } }), { status }) });
+    },
+  }));
+  const server = app.listen(0, '127.0.0.1'); await once(server, 'listening');
+  const post = (input = body) => fetch(`http://127.0.0.1:${server.address().port}/api/subsense/ai/run`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', Origin: origin,
+      Cookie: `${SESSION_COOKIE}=${session.token}`, 'X-SubSense-Wallet': session.wallet }, body: JSON.stringify(input),
+  });
+  try {
+    const response = await post();
+    assert.equal(response.status, 502);
+    const result = await response.json();
+    assert.deepEqual(result.diagnostic, { code: 'PRIVACY_BLOCKED', upstreamStatus: 404 });
+    assert.match(result.message, /has not relaxed/);
+    assert.deepEqual(Object.keys(result).sort(), ['diagnostic', 'message']);
+    assert.ok(!JSON.stringify(result).includes(credentials.openrouterKey));
+    assert.ok(!JSON.stringify(result).includes(service.notes));
+    assert.equal(session.aiBusy, false); assert.equal(session.aiController, undefined);
+    status = 200;
+    assert.equal((await post({ ...body, allowDataCollection: true, consent: false })).status, 400);
+    assert.equal((await post({ ...body, allowDataCollection: 'true' })).status, 400);
+    const optedIn = await (await post({ ...body, allowDataCollection: true })).json();
+    assert.equal(optedIn.dataCollection, 'allow');
+    assert.equal((await post()).status, 200);
+    assert.deepEqual(policies, ['deny', 'allow', 'deny']);
+  } finally { store.close(); await new Promise((resolve) => server.close(resolve)); }
 });
