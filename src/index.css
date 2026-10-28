@@ -13,3 +13,20 @@ body {
   color: var(--color-text-primary);
   font-family: var(--font-family-sans);
 }
+
+.subsense-choice {
+  accent-color: var(--color-bg-brand-solid);
+}
+
+/* Shared min-height reserves native date and icon-only control geometry.
+   Contents use sm line-height + md vertical padding + two border edges. */
+.subsense-button svg {
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .subsense-button,
+  .subsense-choice {
+    transition: none;
+  }
+}

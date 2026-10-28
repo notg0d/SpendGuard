@@ -12,51 +12,76 @@
 // Read from credentials-store on every call, not captured once at import — a
 // credential rewritten mid-session must be scrubbed against its new value, not
 // whatever was live when this module first loaded.
-import { credentialValues } from './credentials-store.mjs'
+import { credentialValues } from './credentials-store.mjs';
 
 function scrub(body) {
   // credentialValues() covers anything seeded/pushed into creds.json, but a
   // credential can also reach this process directly via the environment
   // (e.g. local dev exporting TATUM_API_KEY with no creds file mounted) —
   // include it so that path is still redacted.
-  const secrets = [...credentialValues(), process.env.TATUM_API_KEY].filter(
-    (v) => typeof v === 'string' && v.length >= 12,
-  )
-  if (!secrets.length || body == null) return body
-  let text
+  const secrets = [
+    ...credentialValues(),
+    process.env.TATUM_API_KEY,
+    process.env.MEMWAL_KEY,
+    process.env.OPENAI_API_KEY,
+  ].filter((v) => typeof v === 'string' && v.length >= 12);
+  if (!secrets.length || body == null) return body;
+  let text;
   if (typeof body === 'string') {
-    text = body
+    text = body;
   } else if (Buffer.isBuffer(body)) {
-    text = body.toString('utf8')
+    text = body.toString('utf8');
   } else {
-    return body // streams, etc. — left untouched
+    return body; // streams, etc. — left untouched
   }
-  let redacted = text
+  let redacted = text;
   for (const secret of secrets) {
     if (redacted.includes(secret)) {
-      redacted = redacted.split(secret).join('[REDACTED]')
+      redacted = redacted.split(secret).join('[REDACTED]');
     }
   }
-  return redacted === text ? body : redacted
+  return redacted === text ? body : redacted;
 }
 
-export function credentialGuard(_req, res, next) {
-  const json = res.json.bind(res)
+export function credentialGuard(req, res, next) {
+  const scopedScrub = (body) => {
+    const scrubbed = scrub(body);
+    let text = Buffer.isBuffer(scrubbed) ? scrubbed.toString('utf8') : scrubbed;
+    const values = [
+      ...(res.locals.walletSecrets ?? []),
+      req.walletSession?.credentials?.tatumKey,
+      req.walletSession?.credentials?.memwalKey,
+      req.walletSession?.credentials?.openaiKey,
+      req.body?.tatumKey,
+      req.body?.memwalKey,
+      req.body?.openaiKey,
+    ];
+    if (typeof text === 'string')
+      for (const value of values) {
+        if (typeof value === 'string' && value.length >= 12)
+          text = text.split(value).join('[REDACTED]');
+      }
+    return text ===
+      (Buffer.isBuffer(scrubbed) ? scrubbed.toString('utf8') : scrubbed)
+      ? scrubbed
+      : text;
+  };
+  const json = res.json.bind(res);
   res.json = (payload) => {
-    res.type('application/json')
-    return send(scrub(JSON.stringify(payload)))
-  }
+    res.type('application/json');
+    return send(scopedScrub(JSON.stringify(payload)));
+  };
 
-  const send = res.send.bind(res)
+  const send = res.send.bind(res);
   res.send = (payload) => {
     // res.send(object) serializes to JSON *after* this override would run, so a
     // raw object payload must be stringified here or the redaction is bypassed.
     if (payload && typeof payload === 'object' && !Buffer.isBuffer(payload)) {
-      res.type('application/json')
-      return send(scrub(JSON.stringify(payload)))
+      res.type('application/json');
+      return send(scopedScrub(JSON.stringify(payload)));
     }
-    return send(scrub(payload))
-  }
+    return send(scopedScrub(payload));
+  };
 
-  next()
+  next();
 }
