@@ -16,7 +16,6 @@ import {
   Sun,
   Unplug,
   LogOut,
-  Wallet,
   Sparkles,
 } from 'lucide-react';
 import {
@@ -47,6 +46,7 @@ import {
 } from './forms';
 import {
   Badge,
+  Brand,
   Button,
   Empty,
   Field,
@@ -68,55 +68,55 @@ type View =
 const pages = [
   {
     id: 'overview' as const,
-    label: 'Overview',
+    label: 'Home',
     icon: LayoutDashboard,
     description:
-      'Your recurring spend, with the context to make better decisions.',
+      'Your subscriptions, without the surprises.',
   },
   {
     id: 'subscriptions' as const,
     label: 'Subscriptions',
     icon: ListChecks,
-    description: 'One honest inventory of your recurring commitments.',
+    description: 'Everything you pay for, all in one place.',
   },
   {
     id: 'renewals' as const,
-    label: 'Renewal reviews',
+    label: 'Renewals',
     icon: CalendarClock,
-    description: 'Decide before you renew, with context from past decisions.',
+    description: 'See what’s coming up and decide what’s worth keeping.',
   },
   {
     id: 'journal' as const,
-    label: 'Decision journal',
+    label: 'My decisions',
     icon: Brain,
-    description: 'Your reasons today become better recommendations tomorrow.',
+    description: 'Remember what you chose, and why.',
   },
   {
     id: 'assistant' as const,
     label: 'AI assistant',
     icon: Sparkles,
-    description: 'Ask, explain, plan, and search your context. You stay in control.',
+    description: 'A little help making sense of your subscriptions.',
   },
   {
     id: 'connections' as const,
-    label: 'Connections',
+    label: 'Optional features',
     icon: Unplug,
-    description: 'Real integrations, explicit consent, visible evidence.',
+    description: 'Add AI help or online memory when you need it. Tracking works without them.',
   },
   {
     id: 'settings' as const,
     label: 'Settings',
     icon: Settings,
-    description: 'Your budget, your workspace, your control.',
+    description: 'Make SubSense work for you.',
   },
 ];
 const renewalLabel = (service: Subscription) => {
   const days = daysUntil(service.renewsOn);
   return days < 0
-    ? `${Math.abs(days)}d overdue`
+     ? `${Math.abs(days)} days past renewal`
     : days === 0
       ? 'Today'
-      : `In ${days}d`;
+       : `In ${days} ${days === 1 ? 'day' : 'days'}`;
 };
 
 export default function SubSenseApp() {
@@ -128,9 +128,7 @@ export default function SubSenseApp() {
   const [warning, setWarning] = useState(loaded.warning ?? '');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [view, setView] = useState<View>(
-    (session.vaultUnlocked ?? session.credentialsConfigured) ? 'overview' : 'connections',
-  );
+  const [view, setView] = useState<View>('overview');
   const [mobileNav, setMobileNav] = useState(false);
   const [editing, setEditing] = useState<Subscription | 'new'>();
   const [reviewing, setReviewing] = useState<Subscription>();
@@ -249,7 +247,7 @@ export default function SubSenseApp() {
     const ok = commit((w) => ({ ...w, decisions: [d, ...w.decisions] }));
     if (ok)
       setMessage(
-        `${d.serviceName}: decision saved ${d.demo ? 'as a sample' : 'locally'}. Future reviews now use your context.`,
+        `${d.serviceName}: decision saved ${d.demo ? 'as an example' : 'on this device'}. We’ll remember your reason next time.`,
       );
     return ok;
   }
@@ -260,10 +258,10 @@ export default function SubSenseApp() {
     setMessage('');
     try {
       if (!network)
-        throw new Error('Open Connections and load the active network first.');
+        throw new Error('Open Optional features to refresh your online memory connection first.');
       const existing = decisionReceipt(d, network);
       if (!submit && !existing?.jobId)
-        throw new Error('No pending job on this network.');
+        throw new Error('There isn’t a pending online save to check on this network.');
       const receipt = submit
         ? await uploadDecision(id, d, network)
         : await checkMemory(id, existing!.jobId!, network);
@@ -291,7 +289,7 @@ export default function SubSenseApp() {
       }
       if (receipt.storage === 'mainnet' || receipt.storage === 'testnet')
         setMessage(
-          `Walrus confirmed completion and a ${networkLabel} blob receipt. Testnet receipts never count toward Mainnet eligibility.`,
+          `Your decision is saved online with Walrus Memory (${networkLabel}).${receipt.storage === 'testnet' ? ' This is a test save, not a Mainnet record.' : ''}`,
         );
       else if (receipt.storage === 'error')
         setError(
@@ -299,7 +297,7 @@ export default function SubSenseApp() {
         );
       else
         setMessage(
-          `The ${networkLabel} memory job is pending. Check its status later; it is not yet confirmed.`,
+          'Your decision is still saving online. Check its status later; it isn’t confirmed yet.',
         );
       setUploading(undefined);
     } catch (e) {
@@ -339,7 +337,7 @@ export default function SubSenseApp() {
   const navigation = (infrastructure: boolean) => (
     <nav
       aria-label={
-        infrastructure ? 'Infrastructure navigation' : 'Main navigation'
+        infrastructure ? 'Settings navigation' : 'Main navigation'
       }
       className="space-y-xs"
     >
@@ -353,14 +351,14 @@ export default function SubSenseApp() {
             disabled={busy}
             onClick={() => navigate(p.id)}
             aria-current={view === p.id ? 'page' : undefined}
-            className={`flex w-full items-center gap-lg rounded-lg border px-lg py-lg text-left text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50 ${view === p.id ? 'border-secondary bg-secondary text-primary' : 'border-transparent text-tertiary hover:bg-primary-hover hover:text-secondary'}`}
+            className="ss-nav-item"
           >
             <p.icon size={18} className="shrink-0" aria-hidden="true" />
             <span>{p.label}</span>
             {p.id === 'renewals' && candidates.length > 0 && (
               <span
                 aria-label={`${candidates.length} worth reviewing`}
-                className="ml-auto rounded-md bg-tertiary px-sm text-xs text-secondary"
+                className="ml-auto flex size-6 items-center justify-center rounded-full bg-primary text-xs text-brand-primary"
               >
                 {candidates.length}
               </span>
@@ -395,15 +393,15 @@ export default function SubSenseApp() {
       </div>
     ) : null;
   return (
-    <div className="min-h-screen bg-primary text-primary">
+    <div className="ss-sidebar min-h-screen">
       <a
         href="#workspace-main"
         className="sr-only focus:not-sr-only focus:fixed focus:top-0 focus:z-50 focus:bg-primary focus:p-xl"
       >
         Skip to content
       </a>
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col overflow-y-auto border-r border-secondary bg-primary p-xl lg:flex">
-        <div className="flex items-center justify-between px-lg pb-4xl pt-lg">
+      <aside className="ss-sidebar fixed inset-y-0 left-0 z-30 hidden w-64 flex-col overflow-y-auto p-2xl lg:flex">
+        <div className="px-md pb-4xl pt-lg">
           <a
             href="#overview"
             onClick={(e) => {
@@ -412,68 +410,47 @@ export default function SubSenseApp() {
             }}
             className="flex items-center gap-md rounded-md focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
-            <span className="flex size-8 items-center justify-center rounded-lg bg-brand-solid text-fg-white">
-              <Brain size={20} className="shrink-0" aria-hidden="true" />
-            </span>
-            <span className="text-xl font-semibold tracking-tight">
-              SubSense
-            </span>
+            <Brand inverse />
           </a>
         </div>
-        <p className="px-lg pb-lg text-xs font-medium tracking-wider text-tertiary">
-          WORKSPACE
-        </p>
+        <div className="mb-3xl flex items-center gap-lg rounded-2xl border ss-sidebar-rule p-lg"><span className="flex size-9 items-center justify-center rounded-full bg-primary text-xs font-semibold text-brand-primary">ME</span><div><p className="text-sm font-medium">My subscriptions</p><p className="mt-xxs text-xs ss-sidebar-muted">Your personal space</p></div></div>
         {navigation(false)}
-        <p className="mt-3xl px-lg pb-lg text-xs font-medium tracking-wider text-tertiary">
-          INFRASTRUCTURE
-        </p>
+        <div className="my-3xl border-t ss-sidebar-rule" />
         {navigation(true)}
         <div className="mt-auto px-lg pt-4xl">
-          <div className="border-t border-secondary pt-xl">
-            <div className="flex items-center gap-sm text-sm font-medium text-secondary">
+          <div className="border-t ss-sidebar-rule pt-xl">
+            <div className="flex items-center gap-sm text-sm font-medium">
               <ShieldCheck
                 size={17}
-                className="shrink-0 text-fg-secondary"
+                className="shrink-0"
                 aria-hidden="true"
               />
               {workspace.sample
-                ? 'Sample workspace'
-                : 'Browser-local workspace'}
+                 ? 'Example workspace'
+                 : 'You’re in control'}
             </div>
-            <p className="mt-sm text-xs text-tertiary">
-              Manual tracking. Nothing moves without you.
-            </p>
-            <p className="mt-xl text-xs text-tertiary">
-              Built with Tatum + Walrus
-            </p>
+            <p className="mt-sm text-xs ss-sidebar-muted">No automatic payments or cancellations.</p>
+            <p className="mt-xl text-xs ss-sidebar-muted">A little clarity. Every month.</p>
           </div>
         </div>
       </aside>
-      <div className="lg:pl-60">
-        <header className="flex items-center justify-between gap-lg border-b border-secondary bg-primary px-xl py-md md:px-3xl lg:px-4xl">
+      <div className="min-h-screen bg-secondary pb-7xl text-primary lg:ml-64 lg:rounded-tl-4xl lg:pb-0">
+        <header className="flex items-center justify-between gap-lg px-xl py-xl md:px-3xl lg:px-4xl">
           <div className="flex items-center gap-md">
             <Button
               variant="quiet"
               className="lg:hidden"
               aria-label="Open navigation"
               aria-expanded={mobileNav}
-              onClick={() => setMobileNav(true)}
+               onClick={() => setMobileNav(true)}
             >
               <Menu size={20} aria-hidden="true" />
             </Button>
-            <span className="hidden text-xs text-tertiary sm:inline">
-              Workspace <span className="mx-md text-tertiary">/</span>{' '}
-              <span className="font-medium text-secondary">
-                {selectedPage.label}
-              </span>
-            </span>
+            <span className="text-sm font-medium text-secondary lg:hidden">SubSense</span>
+            <span className="hidden text-xs text-tertiary lg:inline">My space <span className="mx-md">/</span> <span className="text-secondary">{selectedPage.label}</span></span>
           </div>
           <div className="flex items-center gap-md">
-            <Badge tone="brand">Mainnet</Badge>
-            <span className="hidden items-center gap-sm text-xs text-secondary md:flex">
-              <Wallet size={16} className="shrink-0" aria-hidden="true" />
-              {shortWallet(wallet)}
-            </span>
+            <span className="hidden items-center gap-sm text-xs text-tertiary md:flex"><ShieldCheck size={15} aria-hidden="true" />Saved on this device</span>
             <Button
               variant="quiet"
               disabled={Boolean(warning) || busy}
@@ -494,7 +471,7 @@ export default function SubSenseApp() {
             <Button
               variant="quiet"
               disabled={busy}
-              aria-label="Sign out and clear backend credentials"
+               aria-label="Sign out"
               onClick={() =>
                 logout().catch(() =>
                   setError(
@@ -506,16 +483,18 @@ export default function SubSenseApp() {
               <LogOut size={18} className="shrink-0" aria-hidden="true" />
               <span className="hidden sm:inline">Sign out</span>
             </Button>
+            <button className="flex size-10 shrink-0 items-center justify-center rounded-full border border-primary bg-primary text-xs font-semibold text-brand-primary focus-visible:ring-2 focus-visible:ring-focus-ring" aria-label={`My account, wallet ${shortWallet(wallet)}`} onClick={() => navigate('settings')} disabled={busy}>ME</button>
           </div>
         </header>
         <main
           id="workspace-main"
-          className="mx-auto max-w-7xl space-y-2xl p-xl md:p-3xl lg:p-4xl"
+          className="mx-auto max-w-7xl space-y-2xl px-xl pb-3xl pt-lg md:px-3xl lg:px-4xl"
         >
           <div className="flex flex-col justify-between gap-xl sm:flex-row sm:items-center">
             <div>
-              <h1 className="text-heading-xs font-semibold tracking-tight">
-                {selectedPage.label}
+              {view === 'overview' && <p className="mb-sm text-xs text-tertiary">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</p>}
+              <h1 className="text-heading-xs font-medium tracking-tight md:text-heading-sm">
+                {view === 'overview' ? 'A little clarity, every month.' : view === 'renewals' ? 'Upcoming renewals' : selectedPage.label}
               </h1>
               <p className="mt-sm text-sm text-tertiary">
                 {selectedPage.description}
@@ -548,7 +527,7 @@ export default function SubSenseApp() {
                   className="shrink-0 text-fg-tertiary"
                   aria-hidden="true"
                 />
-                Sample workspace · Local examples, not Mainnet memories.
+                Example workspace · These aren’t your real subscriptions.
               </p>
               <Button
                 variant="quiet"
@@ -568,10 +547,11 @@ export default function SubSenseApp() {
               locked={Boolean(warning)}
               onReview={setReviewing}
               onNavigate={navigate}
+              onAdd={() => setEditing('new')}
             />
           )}
           {view === 'subscriptions' && (
-            <section className="min-w-0 overflow-hidden rounded-xl border border-secondary bg-primary">
+            <section className="ss-panel">
               <div className="border-b border-secondary px-2xl py-xl">
                 <SectionHeading
                   title="Your subscriptions"
@@ -598,7 +578,7 @@ export default function SubSenseApp() {
                     />
                   </div>
                 </Field>
-                <Field label="Provider status">
+                <Field label="Status">
                   <select
                     className={fieldClass}
                     value={status}
@@ -624,14 +604,14 @@ export default function SubSenseApp() {
                       <tr>
                         {[
                           'Service',
-                          'Monthly equivalent',
+                          'Monthly cost',
                           'Next renewal',
-                          'Usage & status',
+                          'Status',
                           'Actions',
                         ].map((h) => (
                           <th
                             scope="col"
-                            className={`px-2xl py-lg font-semibold ${h === 'Monthly equivalent' || h === 'Actions' ? 'text-right' : ''}`}
+                            className={`px-2xl py-lg font-semibold ${h === 'Monthly cost' || h === 'Actions' ? 'text-right' : ''}`}
                             key={h}
                           >
                             {h}
@@ -697,7 +677,7 @@ export default function SubSenseApp() {
                               )}
                             </div>
                             <p className="mt-xs text-xs text-tertiary">
-                              {s.usage} use
+                                {{ frequent: 'Used often', occasional: 'Used sometimes', rare: 'Rarely used', unused: 'Not used' }[s.usage]}
                             </p>
                           </td>
                           <td className="px-2xl py-xl">
@@ -765,24 +745,23 @@ export default function SubSenseApp() {
                   return (
                     <section
                       key={s.id}
-                      className="rounded-xl border border-secondary bg-primary p-2xl"
+                      className="ss-panel p-3xl"
                     >
                       <RenewalRow service={s} />
                       <p className="mt-xl text-xs font-medium uppercase tracking-wider text-tertiary">
-                        Recommendation signals
+                        Why this suggestion?
                       </p>
                       <div className="flex flex-wrap gap-md pt-lg">
-                        <Badge>{r.confidence}</Badge>
                         {r.evidence.length > 0 && (
                           <Badge
                             tone={r.evidence[0].demo ? 'warning' : 'brand'}
                           >
                             {r.evidence[0].demo
-                              ? 'Sample context'
+                              ? 'Example decision'
                               : r.evidence[0].storage === 'mainnet' ||
                                   r.evidence[0].storage === 'testnet'
-                                ? `${r.evidence[0].storage === 'mainnet' ? 'Mainnet' : 'Testnet'} context`
-                                : 'Local context'}
+                                ? `${r.evidence[0].storage === 'mainnet' ? 'Saved online' : 'Testing only'}`
+                                : 'Your previous decision'}
                           </Badge>
                         )}
                       </div>
@@ -793,7 +772,7 @@ export default function SubSenseApp() {
                       </ul>
                       {r.evidence[0] && (
                         <blockquote className="mt-xl break-words border-l-2 border-secondary pl-lg text-xs text-tertiary">
-                          Remembered rationale: “{r.evidence[0].reason}”
+                          You told us: “{r.evidence[0].reason}”
                         </blockquote>
                       )}
                       {daysUntil(s.renewsOn) <= 0 && (
@@ -802,7 +781,7 @@ export default function SubSenseApp() {
                           disabled={Boolean(warning)}
                           onClick={() => setAdvancing(s)}
                         >
-                          I renewed · update next date
+                          It renewed · update date
                         </Button>
                       )}
                     </section>
@@ -816,22 +795,19 @@ export default function SubSenseApp() {
             ))}
           {view === 'journal' && (
             <>
-              <div className="grid overflow-hidden rounded-xl border border-primary bg-secondary sm:grid-cols-2 xl:grid-cols-4">
+              <div className="ss-panel grid sm:grid-cols-3">
                 {[
                   {
-                    label: 'Browser-local decisions',
-                    value: workspace.decisions.filter(
-                      (d) => !memoryReceipts(d).length && !d.demo,
-                    ).length,
+                    label: 'Decisions recorded',
+                    value: workspace.decisions.length,
                   },
                   {
-                    label: 'Uploads pending',
+                    label: 'Online saves pending',
                     value: workspace.decisions
                       .flatMap(memoryReceipts)
                       .filter((r) => r.storage === 'pending').length,
                   },
-                  { label: 'Unique Mainnet blobs', value: mainnetCount },
-                  { label: 'Unique Testnet blobs', value: testnetCount },
+                  { label: 'Confirmed online saves', value: mainnetCount },
                 ].map((stat) => (
                   <div
                     key={stat.label}
@@ -844,7 +820,7 @@ export default function SubSenseApp() {
                   </div>
                 ))}
               </div>
-              <Field label="Search decision context">
+              <Field label="Find a decision">
                 <input
                   className={fieldClass}
                   value={search}
@@ -852,22 +828,17 @@ export default function SubSenseApp() {
                     setSearch(e.target.value);
                     setPage(0);
                   }}
-                  placeholder="Service or rationale"
+                  placeholder="Search a service or a reason"
                 />
               </Field>
-              <p className="text-xs text-tertiary">
-                {workspace.decisions.filter((d) => d.demo).length} sample
-                decisions · Mainnet count is workspace-scoped, not account-wide.
-                Walrus uploads are explicit. Active upload target:{' '}
-                {networkLabel}. Testnet does not count toward Mainnet
-                eligibility.
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-lg text-xs text-tertiary"><p>Your choices are saved on this device. Online saving is optional.</p>{!connections?.walrusConfigured && <Button variant="quiet" onClick={() => navigate('connections')}>Set up online memory<ArrowRight size={15} aria-hidden="true" /></Button>}</div>
+              <details className="ss-disclosure"><summary>About online saves</summary><div className="ss-disclosure-body text-xs text-tertiary"><p>Confirmed online saves count unique Walrus Mainnet receipts in this workspace only, not your whole account. Pending saves and example decisions don’t count. Each upload needs your confirmation.</p><p>{testnetCount} older Testnet saves (testing only) · {workspace.decisions.filter((d) => d.demo).length} example decisions · Upload network: {networkLabel}.</p></div></details>
               {journal.length ? (
                 <div className="space-y-xl">
                   {journal.slice(page * 8, page * 8 + 8).map((d) => (
                     <article
                       key={d.id}
-                      className="rounded-xl border border-secondary bg-primary p-2xl"
+                      className="ss-panel p-3xl"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-lg">
                         <div className="flex flex-wrap items-center gap-md">
@@ -882,7 +853,7 @@ export default function SubSenseApp() {
                           </Badge>
                           {!memoryReceipts(d).length && (
                             <Badge tone={d.demo ? 'warning' : 'gray'}>
-                              {d.demo ? 'Sample · local' : 'Browser local'}
+                              {d.demo ? 'Example' : 'On this device'}
                             </Badge>
                           )}
                           {memoryReceipts(d).map((r) => (
@@ -898,12 +869,11 @@ export default function SubSenseApp() {
                                     : 'gray'
                               }
                             >
-                              {r.network === 'testnet' ? 'Testnet' : 'Mainnet'}{' '}
-                              ·{' '}
+                              {r.network === 'testnet' ? 'Testnet (testing) · ' : 'Online · '}
                               {r.storage === r.network
                                 ? 'confirmed'
                                 : r.storage === 'pending'
-                                  ? 'pending'
+                                  ? 'saving'
                                   : 'failed'}
                             </Badge>
                           ))}
@@ -923,7 +893,7 @@ export default function SubSenseApp() {
                         {money(d.costCents)} /{' '}
                         {d.cadence === 'annual' ? 'year' : 'month'}
                       </p>
-                      {memoryReceipts(d).map((r) => (
+                      {memoryReceipts(d).length > 0 && <details className="mt-xl ss-disclosure"><summary>Storage details</summary><div className="ss-disclosure-body">{memoryReceipts(d).map((r) => (
                         <div key={r.network}>
                           <p className="mt-md break-all font-mono text-xs text-quaternary">
                             {r.network === 'testnet' ? 'Testnet' : 'Mainnet'} ·{' '}
@@ -937,7 +907,7 @@ export default function SubSenseApp() {
                             </p>
                           )}
                         </div>
-                      ))}
+                      ))}</div></details>}
                       <div className="flex flex-wrap gap-lg empty:hidden">
                         {!d.demo &&
                           (!network ||
@@ -956,7 +926,7 @@ export default function SubSenseApp() {
                               }
                               onClick={() => setUploading(d)}
                             >
-                              Upload to Walrus · {networkLabel}
+                              Save online
                             </Button>
                           )}
                         {network &&
@@ -973,7 +943,7 @@ export default function SubSenseApp() {
                               }
                               onClick={() => remoteDecision(d, false)}
                             >
-                              {busy ? 'Checking…' : 'Check upload status'}
+                              {busy ? 'Checking…' : 'Check online save'}
                             </Button>
                           )}
                       </div>
@@ -982,8 +952,7 @@ export default function SubSenseApp() {
                 </div>
               ) : (
                 <Empty title="No decisions recorded yet">
-                  Review a subscription and explain your choice. Your next
-                  recommendation will remember it.
+                   Review a subscription and tell us why you’re keeping or reconsidering it. We’ll remember next time.
                 </Empty>
               )}
               {pagination}
@@ -1013,8 +982,7 @@ export default function SubSenseApp() {
             />
           )}
           <footer className="border-t border-secondary pt-xl text-xs text-quaternary">
-            SubSense · Manual tracking, explainable rules, and memories you
-            control. Not financial advice.
+             SubSense · You make the decisions. We help you see the picture. Not financial advice.
           </footer>
         </main>
       </div>
@@ -1022,17 +990,17 @@ export default function SubSenseApp() {
         <Modal
           title="SubSense navigation"
           subtitle={
-            workspace.sample ? 'Sample workspace' : 'Browser-local workspace'
+            workspace.sample ? 'Example workspace' : 'My subscriptions'
           }
           onClose={() => setMobileNav(false)}
         >
-          {navigation(false)}
-          <p className="my-xl text-xs font-medium text-tertiary">
-            INFRASTRUCTURE
-          </p>
-          {navigation(true)}
+          <div className="ss-sidebar rounded-3xl p-lg">{navigation(false)}<div className="my-xl border-t ss-sidebar-rule" />{navigation(true)}</div>
         </Modal>
       )}
+      <nav className="ss-mobile-tabs" aria-label="Mobile navigation">
+        {pages.filter((p) => ['overview', 'subscriptions', 'renewals', 'assistant'].includes(p.id)).map((p) => <button key={p.id} className="ss-mobile-tab" aria-current={view === p.id ? 'page' : undefined} disabled={busy} onClick={() => navigate(p.id)}><p.icon size={19} aria-hidden="true" /><span>{p.id === 'renewals' ? 'Renewals' : p.id === 'assistant' ? 'Assistant' : p.label}</span></button>)}
+        <button className="ss-mobile-tab" aria-label="More pages" aria-expanded={mobileNav} disabled={busy} onClick={() => setMobileNav(true)}><Menu size={19} aria-hidden="true" /><span>More</span></button>
+      </nav>
       {editing && (
         <SubscriptionForm
           service={editing === 'new' ? undefined : editing}
@@ -1060,37 +1028,32 @@ export default function SubSenseApp() {
       )}
       {uploading && (
         <Modal
-          title={`Upload ${uploading.serviceName} decision?`}
-          subtitle={`This sends one decision to the Walrus ${networkLabel} relayer.`}
+          title={`Save your ${uploading.serviceName} decision online?`}
+          subtitle={`One decision, saved using Walrus Memory (${networkLabel}).`}
           onClose={() => {
             if (!busy) setUploading(undefined);
           }}
         >
           <div className="space-y-xl">
             <p className="text-sm text-secondary">
-              You are sending the service name, category, price, decision, and
-              the following rationale. The relayer processes plaintext for
-              embedding/encryption. Stored blobs are encrypted. This is not
-              automatic synchronisation.
+              Your service name, category, price, choice and reason below will be sent to Walrus Memory. Its server can read this information while preparing it; the stored copy is encrypted. Only this decision is uploaded. Future saves are not automatic.
             </p>
             <blockquote className="border-l-2 border-secondary pl-xl text-sm text-tertiary">
               {uploading.reason}
             </blockquote>
             <p className="text-xs text-tertiary">
-              Do not upload secrets or sensitive client details. An accepted job
-              remains pending until the relayer confirms completion. If an
-              earlier request timed out, recall first before retrying.
+              Don’t include secrets or private client details. A save is pending until Walrus confirms it’s complete. If a previous attempt timed out, look for the online decision before trying again.
             </p>
             <div className="flex justify-end gap-lg">
               <Button disabled={busy} onClick={() => setUploading(undefined)}>
-                Keep local
+                Keep on this device
               </Button>
               <Button
                 variant="primary"
                 disabled={busy}
                 onClick={() => remoteDecision(uploading, true)}
               >
-                {busy ? 'Submitting…' : `Confirm ${networkLabel} upload`}
+                {busy ? 'Saving…' : 'Confirm online save'}
               </Button>
             </div>
           </div>

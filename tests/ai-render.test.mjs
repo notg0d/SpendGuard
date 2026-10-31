@@ -24,8 +24,8 @@ test('AI screens render with consent off, no automatic requests and no sample-lo
     globalThis.fetch = async () => { throw new Error('Rendering must never call providers'); };
     const workspace = freshWorkspace();
     const html = renderToString(createElement(module.Assistant, { workspace, onBusy() {}, onConnections() {}, locked: false }));
-    assert.match(html, /Open Connections/); assert.match(html, /No context yet/);
-    assert.match(html, /Semantic search/); assert.match(html, /Explain decisions/); assert.match(html, /Plan renewals/);
+    assert.match(html, /Set up AI help/); assert.match(html, /Nothing to share yet/);
+    assert.match(html, /Find a decision/); assert.match(html, /Explain decisions/); assert.match(html, /Plan renewals/);
     assert.match(html, /type="checkbox"[^>]*disabled/);
     assert.doesNotMatch(html, /type="checkbox"[^>]*checked/);
     assert.match(html, /Allow data-collecting providers for this demo request/);

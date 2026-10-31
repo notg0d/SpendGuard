@@ -1,6 +1,15 @@
-import { useEffect, useId, useRef } from 'react';
+import { cloneElement, isValidElement, useEffect, useId, useRef } from 'react';
 import type { ReactNode, ButtonHTMLAttributes } from 'react';
-import { X, Info, Layers } from 'lucide-react';
+import { X, Info, Layers, ArrowUpRight } from 'lucide-react';
+
+export function Brand({ inverse = false }: { inverse?: boolean }) {
+  return (
+    <span className={`inline-flex items-center gap-lg ${inverse ? 'ss-sidebar-muted' : 'text-primary'}`}>
+      <span className="ss-brand-mark"><ArrowUpRight size={24} strokeWidth={2.5} aria-hidden="true" /></span>
+      <span className="text-xl font-semibold tracking-tight">subsense<span className="text-brand-primary">.</span></span>
+    </span>
+  );
+}
 
 export const fieldClass =
   'subsense-control min-h-10 w-full rounded-lg border border-primary bg-primary px-lg py-md text-sm text-primary placeholder:text-placeholder focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50 disabled:cursor-not-allowed';
@@ -16,7 +25,7 @@ export function Button({
     <button
       type="button"
       {...props}
-      className={`subsense-button inline-flex min-h-10 shrink-0 justify-center items-center gap-md rounded-lg border px-lg py-md text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${variant === 'primary' ? 'border-transparent bg-brand-solid text-primary-on-brand shadow-xs hover:bg-brand-solid-hover' : variant === 'quiet' ? 'border-transparent text-secondary hover:bg-secondary-hover' : 'border-primary bg-primary text-secondary shadow-xs hover:bg-primary-hover'} ${className}`}
+      className={`subsense-button inline-flex min-h-10 shrink-0 justify-center items-center gap-md rounded-full border px-xl py-md text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${variant === 'primary' ? 'border-transparent bg-brand-solid text-primary-on-brand hover:bg-brand-solid-hover' : variant === 'quiet' ? 'border-transparent text-secondary hover:bg-secondary-hover' : 'border-primary bg-primary text-secondary hover:bg-primary-hover'} ${className}`}
     >
       {children}
     </button>
@@ -55,14 +64,18 @@ export function Field({
   children: ReactNode;
   hint?: string;
 }) {
+  const hintId = useId();
+  const control = hint && isValidElement<{ 'aria-describedby'?: string }>(children)
+    && ['input', 'select', 'textarea'].includes(String(children.type))
+    ? cloneElement(children, { 'aria-describedby': [children.props['aria-describedby'], hintId].filter(Boolean).join(' ') })
+    : children;
   return (
-    <label className="flex flex-col gap-sm text-sm font-medium text-secondary">
-      <span>{label}</span>
-      {children}
+    <div className="flex flex-col gap-sm text-sm font-medium text-secondary">
+      <label className="flex flex-col gap-sm"><span>{label}</span>{control}</label>
       {hint && (
-        <span className="text-xs font-regular text-tertiary">{hint}</span>
+        <span id={hintId} className="text-xs font-regular text-tertiary">{hint}</span>
       )}
-    </label>
+    </div>
   );
 }
 export function Notice({
@@ -189,7 +202,7 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="relative flex max-h-full w-full max-w-xl flex-col overflow-hidden rounded-xl border border-primary bg-primary shadow-2xl"
+        className="relative flex max-h-full w-full max-w-xl flex-col overflow-hidden rounded-4xl border border-primary bg-primary shadow-2xl"
       >
         <header className="flex items-start justify-between gap-lg border-b border-secondary p-2xl">
           <div>
@@ -221,7 +234,7 @@ export function ServiceAvatar({ name }: { name: string }) {
     .toUpperCase();
   return (
     <span
-      className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-primary bg-tertiary text-xs font-semibold text-secondary"
+      className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-secondary bg-secondary text-sm font-semibold text-brand-primary"
       aria-hidden="true"
     >
       {initials}

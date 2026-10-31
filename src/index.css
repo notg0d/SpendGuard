@@ -1,6 +1,7 @@
 /* The design-system CSS variables every token class resolves to. Must stay the
    first statement — CSS @import is only valid ahead of other rules. */
 @import '../design-tokens/tokens.css';
+@import './subsense/theme.css';
 
 @tailwind base;
 @tailwind components;
@@ -9,9 +10,87 @@
 /* Tatum foundation — read through the tokens, never hardcoded. The full system
    (component anatomy, states, layout) is in the `tatum-design` skill. */
 body {
-  background-color: var(--color-bg-primary);
+  background-color: var(--color-bg-secondary);
   color: var(--color-text-primary);
   font-family: var(--font-family-sans);
+}
+
+@layer components {
+  .ss-brand-mark {
+    @apply flex size-10 shrink-0 items-center justify-center rounded-full;
+    background: var(--ss-mint);
+    color: var(--ss-forest);
+  }
+  .ss-sidebar {
+    color: var(--ss-on-forest);
+    background: radial-gradient(ellipse at 0% 100%, var(--ss-emerald), transparent 65%), var(--ss-forest);
+  }
+  .ss-sidebar-muted { color: var(--ss-on-forest-muted); }
+  .ss-sidebar-rule { border-color: var(--ss-forest-border); }
+  .ss-nav-item {
+    @apply flex min-h-12 w-full items-center gap-lg rounded-full border border-transparent px-xl py-lg text-left text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50;
+    color: var(--ss-on-forest-muted);
+  }
+  .ss-nav-item:hover, .ss-nav-item[aria-current='page'] {
+    background: var(--ss-forest-selected);
+    color: var(--ss-on-forest);
+  }
+  .ss-nav-item[aria-current='page'] { border-color: var(--ss-forest-border); }
+  .ss-panel { @apply min-w-0 overflow-hidden rounded-4xl border border-secondary bg-primary; }
+  .ss-panel-heading { @apply px-3xl pb-xl pt-3xl; }
+  .ss-feature-card {
+    @apply relative overflow-hidden rounded-4xl border p-3xl;
+    border-color: var(--ss-forest-border);
+    color: var(--ss-on-forest);
+    background: linear-gradient(120deg, var(--ss-forest), var(--ss-emerald));
+  }
+  .ss-feature-card::after {
+    content: '';
+    @apply pointer-events-none absolute -right-12 -top-16 size-80 rounded-full border;
+    border-color: var(--ss-forest-border);
+    box-shadow: 0 0 0 var(--space-4xl) var(--ss-forest-selected), 0 0 0 var(--space-7xl) var(--ss-forest-border);
+    opacity: .25;
+  }
+  .ss-feature-content { @apply relative z-10; }
+  .ss-feature-divider { border-color: var(--ss-forest-border); }
+  .ss-feature-link {
+    @apply inline-flex min-h-10 items-center justify-center gap-md rounded-full border px-lg py-md text-sm font-medium focus-visible:ring-2 focus-visible:ring-focus-ring;
+    border-color: var(--ss-forest-border);
+    background: var(--ss-forest-selected);
+    color: var(--ss-on-forest);
+  }
+  .ss-feature-link:hover { background: var(--ss-forest); }
+  .ss-stat-icon { @apply flex size-11 shrink-0 items-center justify-center rounded-full bg-secondary text-fg-brand-primary; }
+  .ss-renewal-row { @apply flex flex-wrap items-center gap-lg border-b border-secondary py-xl last:border-b-0; }
+  .ss-category-chart { @apply relative mx-auto flex size-44 shrink-0 items-center justify-center; }
+  .ss-category-chart svg { @apply absolute inset-0 size-full -rotate-90; }
+  .ss-category-chart circle { fill: none; stroke-width: 12; }
+  .ss-chart-dot { @apply size-2 shrink-0 rounded-full; }
+  .ss-disclosure {
+    @apply rounded-2xl border border-secondary bg-primary;
+  }
+  .ss-disclosure > summary {
+    @apply cursor-pointer rounded-2xl px-xl py-xl text-sm font-medium text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring;
+  }
+  .ss-disclosure[open] > summary { @apply border-b border-secondary; }
+  .ss-disclosure-body { @apply space-y-xl p-xl; }
+  .ss-choice { @apply min-h-10; }
+  .ss-choice:focus-within { @apply ring-2 ring-focus-ring; }
+  .ss-login-art {
+    @apply relative flex min-h-full flex-col overflow-hidden rounded-4xl p-3xl md:p-5xl;
+    background: radial-gradient(ellipse at 90% 85%, var(--ss-emerald), transparent 65%), var(--ss-forest);
+    color: var(--ss-on-forest);
+  }
+  .ss-orbit {
+    @apply pointer-events-none absolute -bottom-40 -right-40 size-96 rounded-full border;
+    border-color: var(--ss-forest-border);
+    box-shadow: 0 0 0 var(--space-5xl) var(--ss-forest-selected), 0 0 0 var(--space-8xl) var(--ss-forest-border), 0 0 0 var(--space-11xl) var(--ss-forest-selected);
+    opacity: .6;
+  }
+  .ss-login-step { @apply flex size-8 shrink-0 items-center justify-center rounded-full border; border-color: var(--ss-forest-border); }
+  .ss-mobile-tabs { @apply fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-secondary bg-primary px-sm py-md lg:hidden; padding-bottom: max(var(--space-md), env(safe-area-inset-bottom)); }
+  .ss-mobile-tab { @apply flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center gap-xs rounded-xl px-xs text-xs text-tertiary focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50; }
+  .ss-mobile-tab[aria-current='page'] { @apply bg-utility-brand-50 text-brand-primary; }
 }
 
 .subsense-choice {
@@ -26,7 +105,9 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .subsense-button,
-  .subsense-choice {
+  .subsense-choice,
+  .ss-nav-item,
+  .ss-choice {
     transition: none;
   }
 }

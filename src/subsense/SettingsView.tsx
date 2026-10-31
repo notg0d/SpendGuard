@@ -53,7 +53,7 @@ export default function SettingsView({
           <Notice>{message}</Notice>
         </div>
       )}
-      <section className="rounded-xl border border-primary bg-secondary p-2xl space-y-xl xl:col-span-2">
+      <section className="ss-panel p-3xl space-y-xl xl:col-span-2">
         <h2 className="flex items-center gap-md text-md font-semibold">
           <SlidersHorizontal
             size={18}
@@ -94,8 +94,7 @@ export default function SettingsView({
           </Button>
         </form>
         <p className="text-xs text-tertiary">
-          A planning limit, not a bank balance. Annual services are converted to
-          monthly equivalents.
+           Set what you’d like to spend each month. Yearly subscriptions are divided by 12 to make them easier to compare. This isn’t your bank balance.
         </p>
         <Choices
           label="Appearance"
@@ -108,19 +107,17 @@ export default function SettingsView({
           onChange={(theme) => commit((w) => ({ ...w, theme }))}
         />
       </section>
-      <section className="rounded-xl border border-secondary bg-primary p-2xl space-y-xl">
+      <section className="ss-panel p-3xl space-y-xl">
         <h2 className="flex items-center gap-md text-md font-semibold">
           <FolderSync
             size={18}
             className="shrink-0 text-fg-secondary"
             aria-hidden="true"
           />
-          Workspace backups
+          Keep a copy of your data
         </h2>
         <p className="text-sm text-tertiary">
-          Your subscriptions and decisions live in this browser. The preview has
-          no database or durable server storage. Export before clearing browser
-          data. Backups include financial notes: store them privately.
+          Your subscriptions and decisions are saved only in this browser. Download a backup before clearing browser data or switching devices. It contains your financial notes, so keep it private.
         </p>
         <div className="flex flex-wrap gap-lg">
           <Button
@@ -133,12 +130,14 @@ export default function SettingsView({
             }}
           >
             <Download size={16} aria-hidden="true" />
-            Export workspace
+            Download backup
           </Button>
           <Button disabled={busy} onClick={() => file.current?.click()}>
             <Upload size={16} aria-hidden="true" />
-            Import backup
+            Restore backup
           </Button>
+        </div>
+        <details className="ss-disclosure"><summary>Data recovery & older backups</summary><div className="ss-disclosure-body"><div className="flex flex-wrap gap-lg">
           <Button
             onClick={() => {
               try {
@@ -169,7 +168,7 @@ export default function SettingsView({
           >
             Import previous browser workspace
           </Button>
-        </div>
+        </div></div></details>
         <input
           ref={file}
           className="hidden"
@@ -193,24 +192,22 @@ export default function SettingsView({
           }}
         />
         <p className="text-xs text-tertiary">
-          Import keeps the profile ID for remote recall, but strips payment
-          evidence and Testnet/Mainnet receipts. Recall must re-establish remote
-          provenance. Import replaces, rather than merges, this workspace.
+           Restoring replaces your current list; it doesn’t merge the two. Online save receipts and payment checks must be refreshed after restoring.
         </p>
       </section>
-      <section className="rounded-xl border border-secondary bg-primary p-2xl space-y-xl">
+      <section className="ss-panel p-3xl space-y-xl">
         <h2 className="flex items-center gap-md text-md font-semibold">
           <Settings
             size={18}
             className="shrink-0 text-fg-secondary"
             aria-hidden="true"
           />
-          {workspace.sample ? 'Make it yours' : 'Change workspace'}
+          {workspace.sample ? 'Make it yours' : 'Start fresh'}
         </h2>
         <p className="text-sm text-tertiary">
           {workspace.sample
             ? 'You are exploring labelled sample services and decisions. Start empty to track your own subscriptions and use real integrations.'
-            : 'A fresh workspace gets a new profile and memory namespace. Export the current workspace to recover access to its memories later.'}
+            : 'Clear this list and start a new one. Download your current backup first — you’ll need it to return to this list and its online decisions.'}
         </p>
         <div className="flex flex-wrap gap-lg">
           <Button
@@ -223,11 +220,9 @@ export default function SettingsView({
             Start my own workspace
           </Button>
         </div>
-        <p className="break-all font-mono text-xs text-quaternary">
-          Profile: {workspace.profileId}
-        </p>
+        <details className="ss-disclosure"><summary>Account details</summary><div className="ss-disclosure-body text-xs text-tertiary"><p className="break-all">Sign-in wallet: {wallet}</p><p className="break-all">Workspace ID: {workspace.profileId}</p><p>Wallet sign-in uses Sui Mainnet. This doesn’t connect a bank account or authorise payments.</p></div></details>
       </section>
-      <section className="rounded-xl border border-secondary bg-primary p-2xl xl:col-span-2">
+      <section className="ss-panel p-3xl xl:col-span-2">
         <h2 className="flex items-center gap-md text-md font-semibold">
           <ShieldCheck
             size={18}
@@ -238,9 +233,7 @@ export default function SettingsView({
         </h2>
         <ul className="mt-xl grid gap-xl text-sm text-tertiary md:grid-cols-2">
           <li>
-            No bank syncing, automatic cancellations, or autonomous payments.
-            Usage is self-reported; budget rules are deterministic. Optional AI
-            advice can be wrong and is not financial advice.
+            You add prices, dates and usage yourself. We never connect to your bank, pay bills or cancel services. Suggestions can be wrong and aren’t financial advice.
           </li>
           <li>
             Uploading a decision sends its service, price, and rationale to the
@@ -249,10 +242,7 @@ export default function SettingsView({
             data in public demos.
           </li>
           <li>
-            Wallet-signed sessions isolate backend credentials per user. API
-            keys are encrypted separately in your wallet-scoped browser vault.
-            Subscription notes are still ordinary browser-local data, not
-            encrypted workspace storage.
+            Your connection keys are password-protected. Your subscription list and notes are not encrypted — anyone with access to this browser may be able to read them. Signing in with a wallet doesn’t make browser storage private.
           </li>
           <li>
             AI requests explicitly send your question and selected subscriptions
@@ -260,9 +250,7 @@ export default function SettingsView({
             requests, external actions, or persistent AI chat history.
           </li>
           <li>
-            Feedback applies to the same service for 180 days. New prices more
-            than 10% higher require review; essential protection stays in your
-            control.
+            We remember your reasons for six months. A price increase above 10% prompts a fresh look. Services you mark as essential won’t be suggested for cancellation just because you use them less.
           </li>
         </ul>
       </section>

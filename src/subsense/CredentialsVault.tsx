@@ -27,9 +27,11 @@ import {
 export default function CredentialsVault({
   onChanged,
   onBusy,
+  feature = 'ai',
 }: {
   onChanged: () => Promise<void>;
   onBusy: (busy: boolean) => void;
+  feature?: 'ai' | 'memory';
 }) {
   const { session, refresh, lock } = useWalletAccess();
   const wallet = session.walletAddress!;
@@ -122,24 +124,22 @@ export default function CredentialsVault({
     setMessage(result.note);
   }
   return (
-    <section className="space-y-xl rounded-xl border border-secondary bg-primary p-2xl">
+    <section className="ss-panel space-y-xl p-3xl">
       <SectionHeading
-        title="Your encrypted credential vault"
-        description="WALLET-SCOPED · MAINNET ONLY"
+        title="Your connection keys"
+        description="Password-protected on this device"
         action={
           <Badge tone={hasConnection ? 'success' : 'gray'}>
             {hasConnection
-              ? 'Connected · session active'
+               ? 'Connected'
               : saved
-                ? 'Vault saved · locked'
-                : 'Set up your vault'}
+                 ? 'Saved · locked'
+                 : 'Not connected yet'}
           </Badge>
         }
       />
       <p className="text-sm text-tertiary">
-        Add an OpenRouter key for free AI assistance, a complete Mainnet connection for
-        Walrus memories, or both. A separate password encrypts them in this browser.
-        Never enter your wallet seed phrase or owner wallet private key.
+        Connection keys let SubSense use these optional services. A separate password protects them in this browser. Never enter your wallet recovery phrase or owner private key.
       </p>
       {error && <Notice error>{error}</Notice>}
       {message && <Notice>{message}</Notice>}
@@ -152,9 +152,9 @@ export default function CredentialsVault({
               aria-hidden="true"
             />
             <p className="text-sm text-secondary">
-              {session.credentialsConfigured ? 'Your wallet-owned Mainnet account is connected. ' : ''}
-              {session.aiConfigured ? 'AI is ready for explicit requests. ' : ''}
-              Provider keys are held only for this temporary backend session.
+               {session.credentialsConfigured ? 'Online memory is connected. ' : ''}
+               {session.aiConfigured ? 'Your AI assistant is ready. ' : ''}
+               You still choose when to share information. These connections expire after 30 minutes.
             </p>
           </div>
           <Button
@@ -170,7 +170,7 @@ export default function CredentialsVault({
             }
           >
             <LockKeyhole size={16} aria-hidden="true" />
-            Lock vault & disconnect providers
+             Lock connections
           </Button>
         </div>
       ) : (
@@ -182,7 +182,22 @@ export default function CredentialsVault({
           }}
         >
           {creating && (
-            <div className="grid gap-xl md:grid-cols-2">
+            <div className="space-y-xl">
+              <Field label="OpenRouter API key (optional)" hint="For AI help. Skip this if you only want online memory.">
+                <input className={fieldClass} type="password" autoComplete="off"
+                  maxLength={512} value={credentials.openrouterKey ?? ''} disabled={busy}
+                  placeholder="Paste your OpenRouter key"
+                  onChange={(e) => setCredentials((v) => ({ ...v, openrouterKey: e.target.value }))} />
+              </Field>
+              <p className="text-xs text-tertiary">Get a key from <a href="https://openrouter.ai/settings/keys" target="_blank" rel="noreferrer" className="text-brand-primary underline focus-visible:ring-2 focus-visible:ring-focus-ring">OpenRouter</a>. We only use free models; free usage limits and availability still apply. Leave the online memory fields empty for AI-only setup.</p>
+              <details className="ss-disclosure"><summary>Choose a different AI model <span className="text-xs text-tertiary">(optional)</span></summary><div className="ss-disclosure-body">
+                <Choices label="Assistant model" disabled={busy} value={credentials.chatModel ?? DEFAULT_CHAT_MODEL}
+                  options={CHAT_MODELS.map((model) => ({ value: model, label: CHAT_MODEL_LABELS[model] }))}
+                  onChange={(chatModel) => setCredentials((v) => ({ ...v, chatModel }))} />
+                <p className="text-xs text-tertiary">Search uses free Nemotron 3.5 Embed 1B. Setup checks your key and available free models without sending an AI question.</p>
+              </div></details>
+              <details className="ss-disclosure" open={feature === 'memory' ? true : undefined}><summary>Online memory connection <span className="text-xs text-tertiary">(advanced)</span></summary><div className="ss-disclosure-body grid gap-xl md:grid-cols-2">
+              <p className="text-xs text-tertiary md:col-span-2">You need an existing Walrus Memory Mainnet account and registered delegate owned by your connected wallet. Fill in all three fields below. These are service credentials, not your wallet’s private key.</p>
               <Field label="Tatum Mainnet API key">
                 <input
                   className={fieldClass}
@@ -227,27 +242,13 @@ export default function CredentialsVault({
                   />
                 </Field>
               </div>
-              <div className="md:col-span-2 border-t border-secondary pt-xl space-y-xl">
-                <Field label="OpenRouter API key (optional)">
-                  <input className={fieldClass} type="password" autoComplete="off"
-                    maxLength={512} value={credentials.openrouterKey ?? ''} disabled={busy}
-                    onChange={(e) => setCredentials((v) => ({ ...v, openrouterKey: e.target.value }))} />
-                </Field>
-                <Choices label="Assistant model" disabled={busy} value={credentials.chatModel ?? DEFAULT_CHAT_MODEL}
-                  options={CHAT_MODELS.map((model) => ({ value: model, label: CHAT_MODEL_LABELS[model] }))}
-                  onChange={(chatModel) => setCredentials((v) => ({ ...v, chatModel }))} />
-                <p className="text-xs text-tertiary">
-                  Semantic search uses free Nemotron 3.5 Embed 1B. Setup checks your key and free model listings without inference.
-                  Free quotas and availability apply; paid fallbacks are disabled. Create a key at openrouter.ai/settings/keys. Leave all three Mainnet
-                  fields empty for AI-only setup. Never enter secrets in workspace notes.
-                </p>
-              </div>
+              </div></details>
             </div>
           )}
           <div className="grid gap-xl md:grid-cols-2">
             <Field
               label={
-                creating ? 'Create vault password' : 'Unlock vault password'
+                 creating ? 'Create a connection password' : 'Your connection password'
               }
             >
               <input
@@ -262,7 +263,7 @@ export default function CredentialsVault({
               />
             </Field>
             {creating && (
-              <Field label="Confirm vault password">
+               <Field label="Confirm password">
                 <input
                   className={fieldClass}
                   type="password"
@@ -277,19 +278,16 @@ export default function CredentialsVault({
             )}
           </div>
           <p className="text-xs text-tertiary">
-            Use a strong, unique password of at least 12 characters. It never
-            leaves the browser and cannot be recovered. Unlocking sends your
-            provider keys to this app’s backend over HTTPS (HTTP is allowed only
-            on localhost), not your vault password.
+            Choose a unique password with at least 12 characters and keep it safe — we can’t recover it. Your password stays in this browser. Connecting securely sends the service keys to the app’s server, not the password (local development may use HTTP).
           </p>
           <div className="flex flex-wrap gap-lg">
             <Button type="submit" variant="primary" disabled={busy}>
               <LockKeyhole size={16} aria-hidden="true" />
               {busy
-                ? 'Encrypting & verifying…'
+                 ? 'Securing & checking…'
                 : creating
-                  ? 'Save encrypted vault & connect'
-                  : 'Unlock & connect providers'}
+                   ? 'Save & connect'
+                   : 'Unlock connections'}
             </Button>
             {(editing || restored) && (
               <Button
@@ -313,7 +311,7 @@ export default function CredentialsVault({
           </div>
         </form>
       )}
-      <div className="space-y-lg border-t border-secondary pt-xl">
+      <details className="ss-disclosure"><summary>Backups & connection security</summary><div className="ss-disclosure-body">
         <div className="flex flex-wrap gap-lg">
           {saved && (
             <>
@@ -330,7 +328,7 @@ export default function CredentialsVault({
                   );
                 }}
               >
-                Replace credentials
+                 Change connection keys
               </Button>
               <Button
                 disabled={busy}
@@ -400,7 +398,7 @@ export default function CredentialsVault({
           on Mainnet by the connected owner wallet. Those on-chain actions can
           require SUI gas; this app will not perform them automatically.
         </p>
-      </div>
+      </div></details>
       {deleting && (
         <Modal
           title="Forget this saved credential vault?"

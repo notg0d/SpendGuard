@@ -66,35 +66,33 @@ export default function AssistantView({ workspace, connections, locked, onBusy, 
     }
   }
   return (
-    <div className="space-y-2xl">
-      {!ready && <Notice>
-        Add your OpenRouter API key to the encrypted vault in Connections to enable free AI.
-        <Button className="mt-lg" onClick={onConnections}>Open Connections</Button>
-      </Notice>}
-      {workspace.sample && <Notice>Start an empty workspace in Settings before using personal AI context.</Notice>}
-      <section className="space-y-xl rounded-xl border border-secondary bg-primary p-2xl">
-        <SectionHeading title="Your context, your question" description="EXPLICIT REQUESTS · NO AUTONOMOUS ACTIONS"
-          action={<Badge tone={ready ? 'success' : 'gray'}>{ready ? 'Free AI ready' : 'AI locked'}</Badge>} />
+    <div className="grid items-start gap-2xl xl:grid-cols-3">
+      {!ready && <div className="xl:col-span-3"><Notice>
+        Want some AI help? Connect your free OpenRouter account in Optional features. You can draft a question here first.
+        <Button className="mt-lg" onClick={onConnections}>Set up AI help</Button>
+      </Notice></div>}
+      {workspace.sample && <div className="xl:col-span-3"><Notice>Start your own workspace in Settings before sharing information with AI.</Notice></div>}
+      <section className="ss-panel space-y-xl p-3xl xl:col-span-2">
+        <SectionHeading title="What can I help you with?" description="Ask a question. You stay in control."
+          action={<Badge tone={ready ? 'success' : 'gray'}>{ready ? 'Ready' : 'Setup needed'}</Badge>} />
         <form className="space-y-xl" onSubmit={(e) => { e.preventDefault(); void submit(); }}>
           <Choices label="What would you like to do?" value={mode} disabled={disabled}
             options={[{ value: 'ask', label: 'Ask a question' }, { value: 'explain', label: 'Explain decisions' },
-              { value: 'plan', label: 'Plan renewals' }, { value: 'search', label: 'Semantic search' }]}
+              { value: 'plan', label: 'Plan renewals' }, { value: 'search', label: 'Find a decision' }]}
             onChange={(value) => { setMode(value); setResult(undefined); resetConsent(); }} />
-          <Field label={mode === 'search' ? 'Search your selected context' : 'Your question or goal'}>
+          <Field label={mode === 'search' ? '1. What are you looking for?' : '1. What’s on your mind?'}>
             <textarea className={fieldClass} rows={3} maxLength={1000} required disabled={disabled}
               placeholder={mode === 'search' ? 'Which services help me with client handoffs?' : 'What should I review before my next renewals?'}
               value={query} onChange={(e) => { setQuery(e.target.value); resetConsent(); setResult(undefined); }} />
           </Field>
+          <div className="flex flex-wrap gap-md">{['Where could I cut costs?', 'Help me plan my next renewals'].map((prompt) => <Button key={prompt} variant="quiet" className="text-xs" disabled={disabled} onClick={() => { setQuery(prompt); resetConsent(); setResult(undefined); }}>{prompt}</Button>)}</div>
           <div className="space-y-lg border-t border-secondary pt-xl">
             <div className="flex flex-wrap items-center justify-between gap-lg">
-              <h2 className="text-sm font-semibold">Context to share · {activeIds.size} / 100 selected</h2>
+              <h2 className="text-sm font-semibold">2. Choose what to share · {activeIds.size} / 100</h2>
               <Button disabled={disabled || !selected.size} onClick={() => { setSelected(new Set()); resetConsent(); }}>Clear selection</Button>
             </div>
             <p className="text-xs text-tertiary">
-              Select specific records. Names, prices, dates, usage, importance, notes and reasons in selected
-              records are sent to OpenRouter and its model provider; AI advice also includes your {money(workspace.budgetCents)} planning budget.
-              Wallet addresses, API keys, payment evidence and Walrus receipts are not context.
-              Recall remote memories in Connections first if you want to select them here.
+              Only the subscriptions and decisions you select are shared, including their names, prices, dates, usage, importance, notes and reasons. Advice also includes your {money(workspace.budgetCents)} budget. Your wallet address, keys and payment records are never included.
             </p>
             {records.length ? <div className="max-h-80 overflow-y-auto divide-y divide-secondary">
               {records.map((record) => <label key={record.id} className="flex cursor-pointer items-start gap-lg py-lg">
@@ -110,9 +108,9 @@ export default function AssistantView({ workspace, connections, locked, onBusy, 
                   <span className="block break-words text-xs text-tertiary">{record.content || 'No notes.'}</span>
                 </span>
               </label>)}
-            </div> : <p className="text-sm text-tertiary">No context yet. Add a subscription or record a decision to get started.</p>}
+            </div> : <p className="text-sm text-tertiary">Nothing to share yet. Add a subscription or save a decision first.</p>}
           </div>
-          <div className="space-y-sm border-t border-secondary pt-xl">
+          <details className="ss-disclosure"><summary>Demo data options <span className="text-xs text-tertiary">(advanced)</span></summary><div className="ss-disclosure-body">
             <label className="flex items-start gap-lg text-sm text-secondary">
               <input type="checkbox" className="mt-xxs size-4 shrink-0 rounded-xs border border-primary bg-primary focus-visible:ring-2 focus-visible:ring-focus-ring"
                 aria-describedby="demo-privacy-hint" checked={allowDataCollection}
@@ -126,45 +124,47 @@ export default function AssistantView({ workspace, connections, locked, onBusy, 
             <p id="demo-privacy-hint" className="text-xs text-tertiary">
               Leave this off for private data. Your OpenRouter account Privacy settings and guardrails still apply; this option cannot override them. Free-only pricing remains enforced.
             </p>
-          </div>
+          </div></details>
+          <p className="text-sm font-semibold">3. Review & send</p>
           <label className="flex items-start gap-lg text-sm text-secondary">
             <input type="checkbox" className="mt-xxs size-4 shrink-0 rounded-xs border border-primary focus-visible:ring-2 focus-visible:ring-focus-ring"
               checked={consent} disabled={disabled || !ready || !activeIds.size} onChange={(e) => setConsent(e.target.checked)} />
-            <span>I agree to send this question and selected context to OpenRouter and its model provider for this free-model request.</span>
+            <span>I agree to share this question and the selected information with OpenRouter and its AI provider for this request.</span>
           </label>
-          <p className="text-xs text-tertiary">
+          <p className="text-xs text-tertiary">AI can make mistakes. Nothing changes in your subscriptions unless you make the change yourself. Results aren’t saved.</p>
+          <details className="ss-disclosure"><summary>How AI & privacy work</summary><div className="ss-disclosure-body text-xs text-tertiary">
             Answers use {connections?.chatModel ?? 'the vault’s selected free chat model'}; search uses free Nemotron 3.5 Embed 1B.
             {allowDataCollection ? ' Demo opt-in: data-collecting providers are permitted; they may retain or train on your submitted data.' : ' Strict default: routing excludes providers that collect data.'}
             {' '}Provider privacy policies still apply. Free quotas apply; no paid fallbacks, tools or automatic retries.
             Search caches embeddings only in the temporary session; locking clears them. Results are not saved.
-          </p>
+          </div></details>
           <Button type="submit" variant="primary" disabled={disabled || !ready || !consent || !query.trim() || !activeIds.size}>
             {mode === 'search' ? <Search size={16} className="shrink-0" aria-hidden="true" /> : <Sparkles size={16} className="shrink-0" aria-hidden="true" />}
-            {busy ? 'Working…' : mode === 'search' ? 'Search context' : 'Ask assistant'}
+            {busy ? 'Working…' : mode === 'search' ? 'Find a decision' : 'Ask assistant'}
           </Button>
         </form>
       </section>
-      {error && <Notice error>{error}</Notice>}
-      <section className="space-y-xl rounded-xl border border-secondary bg-primary p-2xl" aria-live="polite" aria-busy={busy}>
-        <SectionHeading title={mode === 'search' ? 'Semantic matches' : 'AI response'} description="SUGGESTIONS, NOT VERIFIED EVIDENCE" />
-        {busy ? <p className="text-sm text-tertiary">Processing your explicit request. Nothing in your workspace will change.</p>
-          : !result ? <p className="text-sm text-tertiary">Your result will appear here. Budget rules remain available without AI.</p>
+      {error && <div className="xl:col-span-3"><Notice error>{error}</Notice></div>}
+      <section className="ss-panel space-y-xl p-3xl xl:sticky xl:top-xl" aria-live="polite" aria-busy={busy}>
+        <SectionHeading title={mode === 'search' ? 'What we found' : 'Your answer'} description="Suggestions to help you decide" />
+        {busy ? <p className="text-sm text-tertiary">Thinking it through. Your subscriptions won’t change.</p>
+          : !result ? <div className="flex flex-col items-center gap-lg py-4xl text-center"><span className="ss-stat-icon"><Sparkles size={23} aria-hidden="true" /></span><p className="text-sm font-medium">Let’s make sense of it.</p><p className="text-xs text-tertiary">Ask a question and choose what to share. Your answer will appear here.</p></div>
           : <>
             <p className="text-xs text-tertiary">{result.dataCollection === 'allow'
               ? 'This result used the demo-data privacy opt-in: data-collecting providers were permitted. The option is now off for the next request.'
               : 'This result used strict privacy routing: data-collecting providers were excluded.'}</p>
             {result.answer && <p className="whitespace-pre-wrap break-words text-sm text-secondary">{result.answer}</p>}
-            {result.totals && <p className="text-xs text-tertiary">Selected subscriptions: {money(result.totals.monthly)} / month · {money(result.totals.headroom)} budget headroom. Not a full-workspace total unless all services are selected.</p>}
+            {result.totals && <p className="text-xs text-tertiary">Selected subscriptions: {money(result.totals.monthly)} / month · {money(result.totals.headroom)} left in your budget. This covers only the subscriptions you shared.</p>}
             {result.matches?.map((match) => <article key={match.id} className="space-y-sm border-t border-secondary pt-xl">
               <h3 className="break-words text-sm font-semibold">{match.label}</h3>
-              <p className="text-xs text-tertiary">{match.kind} · similarity {match.score.toFixed(3)} (not confidence or proof)</p>
+              <p className="text-xs text-tertiary">Possible match · {match.kind === 'subscription' ? 'Subscription' : 'Saved decision'}. Check whether it answers your question.</p>
               <p className="break-words text-sm text-secondary">{match.excerpt || 'No notes.'}</p>
             </article>)}
             {Boolean(result.sources?.length) && <div className="border-t border-secondary pt-xl">
-              <h3 className="text-sm font-medium">Context references</h3>
+              <h3 className="text-sm font-medium">Information used</h3>
               <ul className="mt-sm space-y-xs text-xs text-tertiary">{result.sources!.map((source) => <li className="break-words" key={source.id}>{source.label} · {source.kind}</li>)}</ul>
             </div>}
-            <p className="text-xs text-tertiary">{result.model} · {result.contextCount} selected records · {result.usage?.total_tokens ?? ((result.usage?.input_tokens ?? 0) + (result.usage?.output_tokens ?? 0))} reported tokens. Free-model quota applies. Advice may be wrong; review it yourself.</p>
+            <details className="ss-disclosure"><summary>Response details</summary><div className="ss-disclosure-body text-xs text-tertiary">{result.model} · {result.contextCount} selected records · {result.usage?.total_tokens ?? ((result.usage?.input_tokens ?? 0) + (result.usage?.output_tokens ?? 0))} reported tokens. Free-model quota applies. Advice may be wrong; review it yourself.</div></details>
             <Button onClick={() => setResult(undefined)}>Clear result</Button>
           </>}
       </section>

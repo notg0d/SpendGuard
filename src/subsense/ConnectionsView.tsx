@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, X, RefreshCw, Layers, ShieldCheck } from 'lucide-react';
+import { Check, X, RefreshCw, Layers, ShieldCheck, Sparkles, ArrowUpRight } from 'lucide-react';
 import {
   mergeDecisions,
   normalizeSuiAddress,
@@ -35,6 +35,7 @@ export default function ConnectionsView({
   const [busy, setBusy] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [setup, setSetup] = useState<'ai' | 'memory'>();
   const [query, setQuery] = useState(
     'Subscription renewal decisions, value, client work, reasons to keep or cancel',
   );
@@ -106,25 +107,30 @@ export default function ConnectionsView({
     <div className="space-y-3xl">
       {error && <Notice error>{error}</Notice>}
       {message && <Notice>{message}</Notice>}
-      <div className="flex flex-wrap items-center justify-between gap-lg border-b border-secondary pb-xl">
-        <div>
-          <p className="text-sm font-medium">Optional infrastructure</p>
-          <p className="mt-xs text-xs text-tertiary">
-            Signed wallet login isolates your keys. Mainnet operations require a
-            verified vault connection.
-          </p>
-        </div>
-        <Badge tone={config?.network === 'testnet' ? 'warning' : 'gray'}>
-          Target network · Sui {networkLabel}
-        </Badge>
+      <div className="grid gap-2xl md:grid-cols-2">
+        {[
+          { id: 'ai' as const, icon: Sparkles, title: 'A little help from AI', description: 'Ask questions, make a renewal plan, or find a past decision. Only share the information you choose.', ready: config?.aiConfigured, action: 'Set up AI help' },
+          { id: 'memory' as const, icon: Layers, title: 'Remember your decisions online', description: 'Save selected decisions to Walrus Memory and look them up later. Nothing uploads automatically.', ready: config?.walrusConfigured, action: 'Set up online memory' },
+        ].map((feature) => <section className="ss-panel flex flex-col items-start gap-xl p-3xl" key={feature.id}>
+          <div className="flex w-full items-center justify-between gap-lg"><span className="ss-stat-icon"><feature.icon size={22} aria-hidden="true" /></span><Badge tone={feature.ready ? 'success' : 'gray'}>{feature.ready ? 'Ready' : 'Optional'}</Badge></div>
+          <div><h2 className="text-lg font-medium">{feature.title}</h2><p className="mt-md text-sm text-tertiary">{feature.description}</p></div>
+          <Button className="mt-auto" disabled={Boolean(busy)} onClick={() => setSetup(feature.id)}>{feature.ready ? 'Manage connection' : feature.action}<ArrowUpRight size={16} aria-hidden="true" /></Button>
+        </section>)}
       </div>
+      {!setup && <p className="text-sm text-tertiary">Happy with simple tracking? You don’t need to connect anything else.</p>}
+      {setup && <div className="space-y-xl"><div className="flex items-center justify-between gap-lg"><h2 className="text-md font-medium">{setup === 'ai' ? 'Connect your AI assistant' : 'Connect online memory'}</h2><Button variant="quiet" disabled={Boolean(busy)} onClick={() => setSetup(undefined)}>Close setup</Button></div>
       <CredentialsVault
+        key={setup}
+        feature={setup}
         onChanged={refreshConfiguration}
         onBusy={(value) => {
           setBusy(value ? 'vault' : '');
           onBusy(value);
         }}
       />
+      </div>}
+      <details className="ss-disclosure"><summary>Online memory & payment tools <span className="text-xs font-regular text-tertiary">(advanced)</span></summary><div className="ss-disclosure-body">
+      <p className="text-xs text-tertiary">These tools use Sui {networkLabel}. Connect online memory above to enable them. They never send funds.</p>
       <div className="grid gap-2xl md:grid-cols-2">
         {(['tatum', 'walrus'] as const).map((provider) => (
           <section
@@ -145,8 +151,8 @@ export default function ConnectionsView({
                 </h2>
                 <p className="mt-xs text-xs text-tertiary">
                   {provider === 'tatum'
-                    ? 'Native SUI payment evidence'
-                    : 'Decision storage & recall'}
+                     ? 'Check SUI balances and payments'
+                     : 'Save and find your decisions'}
                 </p>
               </div>
             </div>
@@ -212,11 +218,11 @@ export default function ConnectionsView({
       </Button>
       <section className="rounded-xl border border-secondary bg-primary p-2xl space-y-xl">
         <SectionHeading
-          title="Read a native SUI balance"
+           title="Check a SUI wallet balance"
           description={`TATUM · SUI ${networkLabel.toUpperCase()}`}
         />
         <p className="text-sm text-tertiary">
-          A real, read-only API check. Does not link a wallet or save financial evidence.
+           Look up a balance without moving any money. This does not connect the wallet to SubSense.
         </p>
         <form
           className="flex flex-col gap-lg sm:flex-row sm:items-end"
@@ -260,7 +266,7 @@ export default function ConnectionsView({
               !session.credentialsConfigured
             }
           >
-            {busy === 'balance' ? 'Reading…' : 'Read SUI balance'}
+             {busy === 'balance' ? 'Checking…' : 'Check balance'}
           </Button>
         </form>
         {balance && (
@@ -287,16 +293,14 @@ export default function ConnectionsView({
         <section className="min-w-0 rounded-xl border border-secondary bg-primary p-2xl space-y-xl">
           <div>
             <SectionHeading
-              title="Recall decision context"
+               title="Find your online decisions"
               description="WALRUS MEMORY"
             />
             <p className="mt-sm text-sm text-tertiary">
-              Validated SubSense memories from this profile feed the same
-              recommendation engine. Search returns up to 50 relevant results,
-              not an exhaustive account inventory.
+               Find decisions you saved to Walrus Memory. Your suggestions will use the reasons you bring back. This search returns up to 50 relevant results, not a list of everything saved.
             </p>
           </div>
-          <Field label="What should SubSense remember?">
+           <Field label="What are you looking for?">
             <input
               className={fieldClass}
               required
@@ -347,7 +351,7 @@ export default function ConnectionsView({
               })
             }
           >
-            {busy === 'recall' ? 'Recalling…' : 'Recall from Walrus'}
+             {busy === 'recall' ? 'Finding decisions…' : 'Find saved decisions'}
           </Button>
           {workspace.sample && (
             <p className="text-xs text-tertiary">
@@ -563,6 +567,7 @@ export default function ConnectionsView({
           )}
         </section>
       </div>
+      </div></details>
     </div>
   );
 }

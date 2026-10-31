@@ -196,24 +196,24 @@ export function recommend(service, decisions = [], context = {}) {
   const reasons = [];
   if (service.importance === 'essential') {
     baselineAction = 'keep';
-    reasons.push('You have explicitly protected this service as essential.');
+    reasons.push('You marked this as something you can’t do without.');
   } else if (service.usage === 'unused') {
     baselineAction = 'cancel';
     reasons.push(
-      'You reported no recent use. Consider cancellation before renewal.',
+      'You haven’t used it recently. It may be worth cancelling before it renews.',
     );
   } else if (service.usage === 'rare') {
     baselineAction = 'downgrade';
     reasons.push(
-      'You reported rare use. Check whether a lower-cost plan would cover your needs.',
+      'You don’t use it much. A cheaper plan might give you everything you need.',
     );
   } else if (service.usage === 'frequent') {
     baselineAction = 'keep';
     reasons.push(
-      'You reported frequent use; this service appears to earn its place.',
+      'You use this often, so it looks worth keeping.',
     );
   } else {
-    reasons.push('Occasional use needs a value check before another renewal.');
+    reasons.push('You use this sometimes. Is it still worth the price?');
   }
   const name = service.name.trim().toLowerCase();
   const evidence = decisions
@@ -235,34 +235,34 @@ export function recommend(service, decisions = [], context = {}) {
     if (priceChanged) {
       action = 'review';
       reasons.unshift(
-        'The monthly-equivalent price is more than 10% above your last decision. Recheck value instead of blindly repeating it.',
+        'The monthly cost has gone up by more than 10% since your last decision. Take a fresh look before renewing.',
       );
     } else if (last.action === 'review' || last.value === 'unsure') {
       action = 'review';
       reasons.unshift(
-        'Your latest feedback left the value unresolved. Revisit it before renewal.',
+        'You weren’t sure last time. Take another look before it renews.',
       );
     } else if (last.value === 'essential') {
       action = 'keep';
       reasons.unshift(
-        'Your latest feedback says this service is essential at a comparable price.',
+        'You told us this is essential, and the price is still similar.',
       );
     } else if (last.value === 'not-worth-it') {
       action = 'cancel';
       reasons.unshift(
-        'Your latest feedback says this service was not worth its cost.',
+        'Last time, you told us it wasn’t worth the price.',
       );
     } else {
       action = last.action;
       reasons.unshift(
-        'Your latest decision supplies context that usage alone misses.',
+        'We’re taking your last choice into account, not just how often you use it.',
       );
     }
   }
   if (last) reasons.push(`You said: “${last.reason}”`);
   if (context.overBudget)
     reasons.push(
-      'Your workspace is over budget. This recommendation does not change the budget or cancel anything automatically.',
+      'You’re over budget. Reviewing your subscriptions could help. This suggestion won’t cancel anything or change your budget.',
     );
   return {
     action,

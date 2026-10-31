@@ -18,9 +18,9 @@ import { Badge, Button, Field, Modal, Notice, fieldClass } from './ui';
 
 export const actionLabels: Record<Action, string> = {
   keep: 'Keep',
-  downgrade: 'Downgrade',
-  cancel: 'Consider cancellation',
-  review: 'Review value',
+  downgrade: 'Try a cheaper plan',
+  cancel: 'Consider cancelling',
+  review: 'Take another look',
 };
 export const actionTone = (action: Action) =>
   action === 'keep'
@@ -51,7 +51,7 @@ export function Choices<T extends string>({
         {options.map((o) => (
           <label
             key={o.value}
-            className={`flex flex-1 items-center justify-center gap-sm whitespace-nowrap rounded-lg border px-lg py-md text-sm font-medium transition-colors ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-secondary-hover'} ${value === o.value ? 'border-brand bg-secondary text-primary' : 'border-primary bg-primary text-secondary'}`}
+            className={`ss-choice flex flex-1 items-center justify-center gap-sm rounded-xl border px-lg py-md text-sm font-medium transition-colors ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-secondary-hover'} ${value === o.value ? 'border-brand bg-utility-brand-50 text-brand-primary' : 'border-primary bg-primary text-secondary'}`}
           >
             <input
               className="subsense-choice size-4 shrink-0 focus-visible:ring-2 focus-visible:ring-focus-ring"
@@ -132,13 +132,10 @@ export function SubscriptionForm({
   return (
     <Modal
       title={service ? `Edit ${service.name}` : 'Add a subscription'}
-      subtitle="Manual tracking. No bank connection or automatic vendor actions."
+      subtitle="Just the basics. You can change these any time."
       onClose={onClose}
     >
       <form onSubmit={submit} className="space-y-2xl">
-        <p className="text-xs font-semibold uppercase tracking-wider text-tertiary">
-          Subscription details
-        </p>
         <Field label="Service name">
           <input
             autoComplete="off"
@@ -176,17 +173,17 @@ export function SubscriptionForm({
           </Field>
         </div>
         <Choices
-          label="Billing cycle"
+          label="How often do you pay?"
           value={draft.cadence}
           options={[
             { value: 'monthly', label: 'Monthly' },
-            { value: 'annual', label: 'Annual' },
+            { value: 'annual', label: 'Yearly' },
           ]}
           onChange={(v) => change('cadence', v)}
         />
         <Field
           label="Next renewal date"
-          hint="Use the date shown by your provider. Past dates remain overdue until you update them."
+          hint="Check your account with the service for the next billing date."
         >
           <input
             type="date"
@@ -196,25 +193,25 @@ export function SubscriptionForm({
             onChange={(e) => change('renewsOn', e.target.value)}
           />
         </Field>
-        <p className="border-t border-secondary pt-xl text-xs font-semibold uppercase tracking-wider text-tertiary">
-          Usage & value
-        </p>
+        <details className="ss-disclosure" open={service ? true : undefined}>
+        <summary>Help me decide what to keep <span className="text-xs font-regular text-tertiary">(optional)</span></summary>
+        <div className="ss-disclosure-body">
         <Choices
-          label="Recent usage (self-reported)"
+          label="How often do you use it?"
           value={draft.usage}
           options={[
-            { value: 'frequent', label: 'Frequent' },
-            { value: 'occasional', label: 'Occasional' },
-            { value: 'rare', label: 'Rare' },
-            { value: 'unused', label: 'Unused' },
+            { value: 'frequent', label: 'Often' },
+            { value: 'occasional', label: 'Sometimes' },
+            { value: 'rare', label: 'Rarely' },
+            { value: 'unused', label: 'Never' },
           ]}
           onChange={(v) => change('usage', v)}
         />
         <Choices
-          label="Importance"
+          label="How important is it to you?"
           value={draft.importance}
           options={[
-            { value: 'essential', label: 'Essential · protect' },
+            { value: 'essential', label: 'Can’t do without it' },
             { value: 'useful', label: 'Useful' },
             { value: 'optional', label: 'Optional' },
           ]}
@@ -239,9 +236,11 @@ export function SubscriptionForm({
             placeholder="What would you miss if you stopped paying?"
           />
         </Field>
+        </div>
+        </details>
         {service && (
           <Choices
-            label="Provider status"
+            label="Subscription status"
             value={draft.status}
             options={[
               { value: 'active', label: 'Active' },
@@ -320,13 +319,13 @@ export function ReviewForm({
   return (
     <Modal
       title={`Review ${service.name}`}
-      subtitle={`${money(service.costCents)} / ${service.cadence === 'annual' ? 'year' : 'month'} · Your context is the missing piece.`}
+       subtitle={`${money(service.costCents)} / ${service.cadence === 'annual' ? 'year' : 'month'} · Is it still worth it to you?`}
       onClose={onClose}
     >
       <form className="space-y-xl" onSubmit={submit}>
         <div className="border-b border-secondary pb-xl">
           <p className="mb-lg text-xs font-medium uppercase tracking-wider text-tertiary">
-            Current recommendation
+            Our suggestion
           </p>
           <Badge tone={actionTone(recommendation.action)}>
             {actionLabels[recommendation.action]}
@@ -343,13 +342,13 @@ export function ReviewForm({
           onChange={setAction}
           options={[
             { value: 'keep', label: 'Keep' },
-            { value: 'downgrade', label: 'Downgrade' },
+            { value: 'downgrade', label: 'Cheaper plan' },
             { value: 'cancel', label: 'Plan to cancel' },
             { value: 'review', label: 'Decide later' },
           ]}
         />
         <Choices
-          label="What did you learn about its value?"
+          label="How does it feel for the price?"
           value={value}
           onChange={setValue}
           options={[
@@ -361,7 +360,7 @@ export function ReviewForm({
         />
         <Field
           label="Why?"
-          hint="This explanation will inform the next review of this service for up to 180 days."
+          hint="We’ll remember your reason for the next six months."
         >
           <textarea
             className={fieldClass}
@@ -374,9 +373,7 @@ export function ReviewForm({
           />
         </Field>
         <p className="text-xs text-tertiary">
-          Saved {sample ? 'as a sample decision' : 'locally in this browser'}.
-          This does not change your provider status, billing date, or budget.
-          Uploading to Walrus is a separate, explicit action.
+          Saved {sample ? 'as an example' : 'on this device'}. This is a note of your choice, not a cancellation or plan change. Make any changes with the service itself.
         </p>
         {error && <Notice error>{error}</Notice>}
         <div className="sticky bottom-0 flex justify-end gap-lg border-t border-secondary bg-primary py-xl">

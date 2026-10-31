@@ -1,0 +1,72 @@
+/* SubSense's Emerald24-inspired brand. Keep the generated Tatum foundation
+   untouched; these app-owned semantic aliases retain its geometry and states. */
+:root {
+  --color-text-primary: #182b25;
+  --color-text-secondary: #40554d;
+  --color-text-tertiary: #62736b;
+  --color-text-quaternary: #62736b;
+  --color-text-placeholder: #738179;
+  --color-text-brand-primary: #00644b;
+  --color-fg-primary: #182b25;
+  --color-fg-secondary: #40554d;
+  --color-fg-tertiary: #62736b;
+  --color-fg-brand-primary: #00644b;
+  --color-bg-primary: #ffffff;
+  --color-bg-primary-hover: #f7faf8;
+  --color-bg-secondary: #f3f6f4;
+  --color-bg-secondary-hover: #eaf0ec;
+  --color-bg-tertiary: #e6ede8;
+  --color-bg-brand-solid: #00644b;
+  --color-bg-brand-solid-hover: #004f3c;
+  --color-border-primary: #d7e0d9;
+  --color-border-secondary: #e8ede9;
+  --color-border-brand: #008565;
+  --color-ring-focus-ring: #008565;
+  --color-utility-brand-50: #edf7f1;
+  --color-utility-brand-200: #c5e4d2;
+  --color-utility-brand-600: #007558;
+  --color-utility-brand-700: #005d46;
+  --ss-forest: #003d30;
+  --ss-emerald: #00765a;
+  --ss-mint: #b7e4cc;
+  --ss-on-forest: #ffffff;
+  --ss-on-forest-muted: #c0d8cc;
+  --ss-forest-border: #3b7560;
+  --ss-forest-selected: #1b614c;
+  --ss-chart-1: #00644b;
+  --ss-chart-2: #65a78a;
+  --ss-chart-3: #a7c9b6;
+  --ss-chart-4: #d8e5dc;
+}
+
+[data-theme='dark'], .dark {
+  --color-text-primary: #eef5f0;
+  --color-text-secondary: #c9d6cc;
+  --color-text-tertiary: #a3b5a9;
+  --color-text-quaternary: #a3b5a9;
+  --color-text-placeholder: #91a398;
+  --color-text-brand-primary: #95d8b4;
+  --color-fg-primary: #eef5f0;
+  --color-fg-secondary: #c9d6cc;
+  --color-fg-tertiary: #a3b5a9;
+  --color-fg-brand-primary: #95d8b4;
+  --color-bg-primary: #182720;
+  --color-bg-primary-hover: #21332a;
+  --color-bg-secondary: #101e17;
+  --color-bg-secondary-hover: #243a2d;
+  --color-bg-tertiary: #2b4033;
+  --color-bg-brand-solid: #007558;
+  --color-bg-brand-solid-hover: #008565;
+  --color-border-primary: #3b5143;
+  --color-border-secondary: #2b4033;
+  --color-border-brand: #78c99e;
+  --color-ring-focus-ring: #78c99e;
+  --color-utility-brand-50: #173e2d;
+  --color-utility-brand-200: #356a4f;
+  --color-utility-brand-600: #95d8b4;
+  --color-utility-brand-700: #b7e4cc;
+  --ss-chart-1: #95d8b4;
+  --ss-chart-2: #65a78a;
+  --ss-chart-3: #476e58;
+  --ss-chart-4: #2b4033;
+}

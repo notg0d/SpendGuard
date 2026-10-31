@@ -23,7 +23,8 @@ npm run dev
 
 Open **http://localhost:3000**. Express and Vite share one process and one port.
 Connect a Sui Mainnet wallet and sign the one-time personal login message. This is
-not a transaction and costs no gas. Connections opens first to set up your vault.
+not a transaction and costs no gas. Home opens first; add a subscription without
+any provider setup. **Optional features** offers AI help and online memory setup.
 New workspaces start empty; sample loading has been removed. Existing saved data
 is preserved; **Settings → Start my own workspace** explicitly replaces it after
 confirmation. Browser storage is the only local
@@ -197,9 +198,12 @@ their keys are never forwarded to OpenRouter. See [AI setup](docs/AI.md).
 See [verification notes](docs/VERIFICATION.md) and
 [demo/submission checklist](docs/DEMO.md).
 
-The UI uses composition research from Uniswap, Aave and Zerion with the existing Tatum
-tokens. It includes a financial summary, live category breakdown, compact service
-inventory, decision evidence, and keyboard-accessible mobile navigation.
+The UI is inspired by [Goodface’s Emerald24 web and mobile case study](https://www.behance.net/gallery/256834293/Neobank-web-mobile-app-UXUI-design-Emerald24):
+an emerald sidebar, soft neutral surfaces, rounded panels and progressive disclosure.
+SubSense’s own brand aliases layer over the unchanged Tatum geometry tokens.
+Home prioritises spending, budget and renewals; technical connection and receipt
+details live in optional/advanced sections. Forms use plain language, and mobile
+has labelled bottom navigation. No reference artwork or Emerald24 branding is copied.
 
 Local functionality is implemented and tested. A historical Tatum Testnet health
 query succeeded, but authenticated Mainnet wallet/provider access, live Mainnet

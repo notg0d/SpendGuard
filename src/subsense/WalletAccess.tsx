@@ -19,7 +19,9 @@ import {
 } from '@mysten/dapp-kit';
 import {
   ArrowRight,
-  Brain,
+  CalendarDays,
+  Check,
+  Sparkles,
   LockKeyhole,
   LogOut,
   ShieldCheck,
@@ -28,7 +30,7 @@ import {
 import { normalizeSuiAddress } from '../../shared/subsense.mjs';
 import { api, setApiWallet } from './api';
 import type { WalletSession } from './api';
-import { Badge, Button, Modal, Notice } from './ui';
+import { Brand, Button, Modal, Notice } from './ui';
 
 type Access = {
   session: WalletSession;
@@ -240,79 +242,46 @@ function WalletGate({ children }: { children: ReactNode }) {
       </AccessContext.Provider>
     );
   return (
-    <div className="min-h-screen bg-primary text-primary">
-      <header className="mx-auto flex max-w-6xl items-center justify-between gap-lg border-b border-secondary px-xl py-xl md:px-4xl">
-        <div className="flex items-center gap-md">
-          <Brain
-            size={24}
-            className="shrink-0 text-fg-brand-primary"
-            aria-hidden="true"
-          />
-          <span className="text-xl font-semibold">SubSense</span>
-        </div>
-        <Badge tone="brand">Sui Mainnet</Badge>
-      </header>
-      <main className="mx-auto grid max-w-6xl items-center gap-5xl px-xl py-7xl md:px-4xl lg:grid-cols-2">
-        <div className="space-y-2xl">
-          <p className="text-xs font-semibold uppercase tracking-wider text-tertiary">
-            Your wallet. Your context.
-          </p>
-          <h1 className="text-heading-md font-semibold tracking-tight md:text-heading-lg">
-            Renew with a reason.
-            <br />
-            Remember it with SubSense.
-          </h1>
-          <p className="max-w-xl text-lg text-tertiary">
-            Track subscriptions, make clearer renewal decisions, and keep your
-            context in Walrus Memory.
-          </p>
-          <ol className="space-y-xl border-t border-secondary pt-2xl text-sm text-secondary">
-            {[
-              [
-                'Connect your Sui wallet',
-                'Sign a one-time login message. No transaction or gas.',
-              ],
-              [
-                'Unlock your private vault',
-                'Your API credentials are encrypted with a separate password.',
-              ],
-              [
-                'Choose your optional integrations',
-                'Free AI assistance via OpenRouter; verified MemWal Mainnet for memory uploads.',
-              ],
-            ].map(([title, detail], index) => (
-              <li key={title} className="flex gap-lg">
-                <span className="font-semibold text-tertiary">
-                  0{index + 1}
-                </span>
-                <div>
-                  <p className="font-semibold">{title}</p>
-                  <p className="mt-xs text-tertiary">{detail}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-        <section className="space-y-xl rounded-xl border border-secondary bg-secondary p-2xl md:p-3xl">
-          <Wallet
-            size={28}
-            className="shrink-0 text-fg-secondary"
-            aria-hidden="true"
-          />
+    <div className="min-h-screen bg-secondary p-lg text-primary md:p-3xl">
+      <main className="mx-auto grid min-h-screen max-w-7xl gap-2xl lg:min-h-0 lg:grid-cols-2">
+        <section className="ss-login-art hidden lg:flex">
+          <div className="ss-orbit" aria-hidden="true" />
+          <div className="relative z-10"><Brand inverse /></div>
+          <div className="relative z-10 pb-5xl pt-7xl md:py-8xl">
+            <p className="mb-xl text-sm ss-sidebar-muted">Less guesswork. More peace of mind.</p>
+            <h1 className="max-w-lg text-heading-md font-medium tracking-tight md:text-heading-lg">A little clarity.<br />Every month.</h1>
+            <p className="mt-xl max-w-sm text-sm ss-sidebar-muted">Know what you’re paying for, see what’s renewing, and make room for what matters.</p>
+            <div className="mt-5xl space-y-xl">
+              {[
+                { icon: CalendarDays, title: 'No more surprise renewals', detail: 'Your next dates, in one simple view.' },
+                { icon: Sparkles, title: 'Keep what’s worth it', detail: 'Suggestions that learn from your choices.' },
+                { icon: Check, title: 'Always your decision', detail: 'We never pay or cancel on your behalf.' },
+              ].map((item) => <div key={item.title} className="flex items-start gap-lg"><span className="ss-login-step"><item.icon size={16} aria-hidden="true" /></span><div><p className="text-sm font-medium">{item.title}</p><p className="mt-xs text-xs ss-sidebar-muted">{item.detail}</p></div></div>)}
+            </div>
+          </div>
+          <p className="relative z-10 mt-auto text-xs ss-sidebar-muted">Your subscriptions. Your priorities. Your space.</p>
+        </section>
+        <section className="flex flex-col justify-center rounded-4xl border border-secondary bg-primary px-2xl py-5xl md:px-7xl">
+          <div className="mx-auto w-full max-w-sm space-y-2xl">
+          <div className="pb-xl lg:hidden"><Brand /></div>
+          <span className="ss-stat-icon"><Wallet size={24} aria-hidden="true" /></span>
           <div>
-            <h2 className="text-heading-xs font-semibold">
+            <h2 className="text-heading-xs font-medium">
               Welcome to your workspace
             </h2>
             <p className="mt-md text-sm text-tertiary">
-              Connect first, then sign in. We never ask for your wallet seed
-              phrase or owner private key.
+              Use your Sui wallet to sign in. Then add your first subscription — no other setup needed.
             </p>
           </div>
+          <ol className="flex items-center gap-lg text-xs" aria-label="Sign-in progress">
+            <li className={`flex items-center gap-md ${address ? 'text-brand-primary' : 'text-secondary'}`}><span className="flex size-6 items-center justify-center rounded-full bg-utility-brand-50 text-brand-primary">{address ? <Check size={13} aria-hidden="true" /> : '1'}</span>Connect wallet</li>
+            <li className="h-px flex-1 bg-tertiary" aria-hidden="true" />
+            <li className={`flex items-center gap-md ${address ? 'text-secondary' : 'text-tertiary'}`}><span className="flex size-6 items-center justify-center rounded-full bg-secondary">2</span>Confirm sign-in</li>
+          </ol>
           {error && <Notice error>{error}</Notice>}
           {address && (
             <p className="break-all text-sm text-secondary">
-              Connected: {shortWallet(address)}{' '}
-              <span className="text-tertiary">· not yet signed in</span>
+              Wallet connected: {shortWallet(address)}
             </p>
           )}
           <Button
@@ -325,12 +294,12 @@ function WalletGate({ children }: { children: ReactNode }) {
             {loading
               ? 'Checking session…'
               : busy
-                ? 'Waiting for signature…'
+                ? 'Confirm in your wallet…'
                 : isConnecting
                   ? 'Connecting…'
                   : address
-                    ? 'Sign in with wallet'
-                    : 'Connect Sui wallet'}
+                    ? 'Confirm sign-in'
+                    : 'Connect wallet'}
             <ArrowRight size={18} aria-hidden="true" />
           </Button>
           {address && (
@@ -349,23 +318,25 @@ function WalletGate({ children }: { children: ReactNode }) {
               Change wallet
             </Button>
           )}
-          <div className="space-y-md border-t border-secondary pt-xl text-xs text-tertiary">
+          <div className="space-y-lg border-t border-secondary pt-xl text-xs text-tertiary">
             <p className="flex items-start gap-md">
               <ShieldCheck size={16} className="shrink-0" aria-hidden="true" />
-              Login is a message signature, not permission to spend funds.
+              Sign-in is free. It doesn’t give us permission to spend your money.
             </p>
             <p className="flex items-start gap-md">
               <LockKeyhole size={16} className="shrink-0" aria-hidden="true" />
-              Mainnet account creation and delegate registration may need gas
-              and are never performed automatically.
+              We’ll never ask for your recovery phrase or wallet private key.
             </p>
+            <p>Your subscription list stays in this browser. Download a backup in Settings to keep a copy.</p>
+          </div>
+          <details className="ss-disclosure"><summary>New to wallet sign-in?</summary><div className="ss-disclosure-body text-xs text-tertiary"><p>A wallet is your sign-in method, not a bank connection. You need a Sui Mainnet-compatible wallet, such as Slush.</p><p>First connect it, then approve a one-time sign-in message. No payment or transaction is made.</p></div></details>
           </div>
         </section>
       </main>
       {chooser && (
         <Modal
-          title="Connect a Sui wallet"
-          subtitle="Choose an installed wallet. Connection does not sign you in."
+          title="Choose your wallet"
+          subtitle="Next, you’ll confirm a free sign-in message in your wallet."
           onClose={() => setChooser(false)}
         >
           <div className="space-y-lg">
